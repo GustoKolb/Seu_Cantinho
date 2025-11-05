@@ -19,10 +19,15 @@ URL_MAP = {
 
 class Event:
     def __init__(self, target, method, data):
-        prefix = target[target.find('/')+1:]
-        suffix=''
         if target.find('/') != -1:
-            suffix = '/'+target[:target.find('/')]
+            prefix = target[:target.find('/')]
+            suffixes = target[target.find('/'):].split('/')
+            suffix="?"
+            for s in suffixes:
+                suffix+=s+"&"
+        else:
+            prefix = target
+            suffix=''
 
         self.target = f"{API_URL}/{URL_MAP[prefix]}{suffix}"
         self.method = method

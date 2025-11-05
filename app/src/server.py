@@ -35,7 +35,7 @@ async def nonGetHandler(target, request: Request):
     return {'status': status, 'msg': msg}
 
 @app.get("/{target}")
-def get_locais(target, search_string=None, search_filters=None):
+def get_target(target, search_string=None, search_filters=None):
     try:
         match target:
             case 'bookings':
@@ -44,7 +44,6 @@ def get_locais(target, search_string=None, search_filters=None):
                 results = dbManager.read_user(byName=search_string)
             case 'places':
                 results = dbManager.read_place(byName=search_string)
-
         msg = "Pesquisa Realizada Com Sucesso"
         status='ok'
     except:
@@ -53,4 +52,3 @@ def get_locais(target, search_string=None, search_filters=None):
         msg = "Erro ao Ler Banco de Dados"
 
     return {'status':status, 'msg':msg, 'data':results}
-
