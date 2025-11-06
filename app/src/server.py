@@ -12,6 +12,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+#prefixo pra construcao de nome da funcao
 ACTIONS = {
     "POST": "create",
     "PUT": "update",
@@ -56,10 +57,10 @@ def get_target(target, search_string=None, search_filters=None):
 
         #aplica filtros do tipo atributo:
         #   o objeto possui aquele campo e com o valor especificado
-        search_filters = search_filters or {}
-        search_filters = json.loads(unquote(search_filters))
-        results = [r for r in results if all(getattr(r, k, None) == v
-                                         for k, v in search_filters.items())]
+        if search_filters:
+            search_filters = json.loads(unquote(search_filters))
+            results = [r for r in results if all(getattr(r, k, None) == v
+                                             for k, v in search_filters.items())]
 
         msg = "Pesquisa Realizada Com Sucesso"
         status='ok'

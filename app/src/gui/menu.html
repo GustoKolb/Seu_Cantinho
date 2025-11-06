@@ -12,18 +12,65 @@
     }
 </style>
 
-
 <body>
-
-    <div style="text-align:center;">
-        <img src="images/chiyo.jpeg" width="100%" height="100%">
+    <div id="menu" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(5rem, 18rem)); gap:1rem; padding:1rem;">
+        <!-- Os blocos são inseridos aqui -->
     </div>
-    
+
+    <script>
+        const BROKER_URL = "http://localhost:8000"
+        const ENDPOINT_LOCAIS = "locais"
+        const DEFAULT_IMAGE='images/chiyo.jpeg'
+        pesquisar_locais()//carrega menu com todos os locais
+
+        async function pesquisar_locais(search_string='', filtros=''){
+            const url = `${BROKER_URL}/${ENDPOINT_LOCAIS}?search_string=${encodeURIComponent(search_string)}&search_filters=${encodeURIComponent(filtros)}`
+
+            const locais = await fetch(url, {method: 'GET', headers: {'Content-Type': 'application/json'}})
+                                .then(r => r.ok && r.json()).then(j => j.data).catch(() => false);
+                                
+            const menu = document.getElementById("menu");
+            locais.forEach(local => {
+                local.imagem = DEFAULT_IMAGE;//ADICIONA PQ N TEM AINDA
+
+                // estilizacao do bloco maior que possui as infos
+                const bloco = document.createElement("div");
+                bloco.style.flex = "0 0 200px";
+                bloco.style.border = "1px solid #ccc";
+                bloco.style.borderRadius = "10px";
+                bloco.style.padding = "10px";
+                bloco.style.textAlign = "left";
+                bloco.style.background = "white";
+                bloco.style.cursor =  "pointer";
+                
+                // imagem
+                const img = document.createElement("img");
+                img.src = local.imagem;
+                img.style.width = "100%";
+                img.style.borderRadius = "5px";
+                bloco.appendChild(img);
+
+                // nome
+                const nome = document.createElement("div");
+                nome.innerText = local.name;
+                nome.style.margin = "10px 0";
+                nome.style.fontSize="1rem";
+                bloco.appendChild(nome);
+                
+                // transformar todo o bloco em algo clicavel, redireciona pra pagina especifica do local
+                bloco.onclick = () => {
+                    window.location.href =
+                    `produto.html?nome=${encodeURIComponent(local.name)}` +
+                    `&imagem=${encodeURIComponent(local.imagem)}` +
+                    `&descricao=${encodeURIComponent(local.descricao || "")}`;
+                };
+                
+                // adiciona ao carrosel
+                menu.appendChild(bloco);
+            });
+        }
+    </script>
 </body>
 
-<script>
-
-
-</script>
-
 </html>
+        

@@ -31,7 +31,7 @@
             const password = document.getElementById('password').value;
 
             //GET url pra validar se (user, password) correspondem a alguem no BD
-            const url = `${BROKER_URL}/${ENDPOINT_USUARIOS}?search_string=${user}&search_filters={"password":"${password}"}`
+            const url = `${BROKER_URL}/${ENDPOINT_USUARIOS}?search_string=${encodeURIComponent(user)}&search_filters={"password":"${encodeURIComponent(password)}"}`
 
             const validated = await fetch(url, {method: 'GET', headers: {'Content-Type': 'application/json'}})
                                 .then(r => r.ok && r.json()).then(j => j.data.length > 0).catch(() => false);

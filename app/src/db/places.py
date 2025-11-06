@@ -51,3 +51,10 @@ def delete_place(**kwargs):
         return 1
     places.remove(p)
     return 0
+
+#cria uns locais para teste
+places.append(Place("Teste 0", "Local 0", "Preço 0"))
+places.append(Place("Teste 1", "Local 1", "Preço 1"))
+places.append(Place("Teste 2", "Local 2", "Preço 2"))
+places.append(Place("Teste 3", "Local 3", "Preço 3"))
+places.append(Place("Teste 4", "Local 4", "Preço 4"))

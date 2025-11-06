@@ -1,0 +1,31 @@
+<!-- produto.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        img { max-width: 100%; border-radius: 10px; }
+        .container { max-width: 600px; margin: auto; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="nome">Produto</h1>
+        <img id="imagem" src="">
+        <p id="descricao">Descrição ax q n precisa, todos sao o msm html ent eh soh mudar esse daqui pra um bonitinho q todos os locais vao ficar igual. Redimensionar, reposicionar e adicionar coisas</p>
+        <button onclick="window.history.back()">Voltar</button>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const nome = params.get("nome");
+        const imagem = params.get("imagem");
+        const descricao = params.get("descricao");
+
+        // Atualizar elementos
+        if (nome) document.getElementById("nome").innerText = nome;
+        if (imagem) document.getElementById("imagem").src = imagem;
+        if (descricao) document.getElementById("descricao").innerText = descricao;
+    </script>
+</body>
+</html>
