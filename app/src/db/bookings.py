@@ -1,13 +1,14 @@
 from db.utils import normalizeString, parseDate
+from db.places import read_place
 
 bookings = []
 booking_counter = 0
 
 class Booking:
-    def __init__(self, user, place_id, date_start, date_end):
+    def __init__(self, user, place, date_start, date_end):
         global booking_counter
         self.user = user#client
-        self.place_id = place_id
+        self.place = place
         self.date_start = parseDate(date_start)
         self.date_end = parseDate(date_end)
         self.booking_id = booking_counter
@@ -27,12 +28,16 @@ def create_booking(**kwargs):
     if not all(k in kwargs for k in required):
         return None
     
+    place = read_place(byId=kwargs['place_id'])
+
     kw_date_start = parseDate(kwargs['date_start'])
     kw_date_end = parseDate(kwargs['date_end'])
-    if any(b.place_id == kwargs["place_id"] and date_conflict(b.date_start, b.date_end,
+    if any(b.place.id == place.id and date_conflict(b.date_start, b.date_end,
                                     kw_date_start, kw_date_end) for b in bookings):
         return 1
 
+    kwargs.pop('place_id')
+    kwargs["place"] = place
     b = Booking(**kwargs)
     bookings.append(b)
     return 0
@@ -63,7 +68,9 @@ def update_booking(**kwargs):
 
     kw_date_start = parseDate(kwargs['date_start'])
     kw_date_end = parseDate(kwargs['date_end'])
-    if any(b.place_id == kwargs["place_id"] and date_conflict(b.date_start, b.date_end,
+
+    place = read_place(byId=kwargs['place_id'])
+    if any(b.place.id == place.id and date_conflict(b.date_start, b.date_end,
                                     kw_date_start, kw_date_end) for b in bookings):
         return 1
 

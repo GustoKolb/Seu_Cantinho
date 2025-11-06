@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seu Cantinho - Entrar</title>
+    <link rel="stylesheet" href="global.css">
+</head>
+
+<body>
+    <div class="card">
+        <h2>Entre Com Seu Usuário</h2>
+        <input id="user" placeholder="Usuário">
+        <input id="password" type="password" placeholder="Senha">
+        <div class="btn-row">
+            <button onclick="loginUser()">Entrar</button>
+        </div>
+        <div id="msg"></div>
+    </div>
+
+    <script>
+        const BROKER_URL = "http://localhost:8000"
+        const ENDPOINT_USUARIOS = "usuarios"
+        document.getElementById('user').value = ""
+
+        async function loginUser() {
+            const msg = document.getElementById('msg');
+            msg.innerText = "";
+
+            const user = document.getElementById('user').value;
+            const password = document.getElementById('password').value;
+
+            //GET url pra validar se (user, password) correspondem a alguem no BD
+            const url = `${BROKER_URL}/${ENDPOINT_USUARIOS}?search_string=${user}&search_filters={"password":"${password}"}`
+
+            const validated = await fetch(url, {method: 'GET', headers: {'Content-Type': 'application/json'}})
+                                .then(r => r.ok && r.json()).then(j => j.data.length > 0).catch(() => false);
+
+            if (validated)
+                window.location.href = "menu.html"
+            else
+                msg.innerText = "Usuário e/ou Senha Incorretos";
+        }
+    </script>
+</body>
+</html>

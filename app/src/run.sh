@@ -1,7 +1,8 @@
-#liga broker e server, uso: bash run.sh
-#vai rodar os dois juntos, bom pra testar, ruim de debugar
-#pra desenvolver eh melhor rodar em terminais separados
-#lembrar de matar o processo e reexecutar dps de mudar o codigo!!!
+#sobe broker, server e host pra clientes simulados
 uvicorn broker:app --host 0.0.0.0 --port 8000 &
+BROKER_PID=$!
 uvicorn server:app --host 0.0.0.0 --port 8001 &
+SERVER_PID=$!
+
+trap "kill $BROKER_PID $SERVER_PID ; exit 0" SIGINT
 wait

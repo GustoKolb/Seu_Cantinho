@@ -1,12 +1,20 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request
 import threading
 import requests
 import asyncio
 import time
 
-app = FastAPI()
-queue = asyncio.Queue()
 
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+queue = asyncio.Queue()
 API_URL = "http://127.0.0.1:8001" #url da api de processamento de eventos
 
 # mapeia rotas de client->broker para broker->server
@@ -18,24 +26,16 @@ URL_MAP = {
 }
 
 class Event:
-    def __init__(self, target, method, data):
-        if target.find('/') != -1:
-            prefix = target[:target.find('/')]
-            suffixes = target[target.find('/'):].split('/')
-            suffix="?"
-            for s in suffixes:
-                suffix+=s+"&"
-        else:
-            prefix = target
-            suffix=''
+    def __init__(self, target, request, data):
+        prefix = target
+        suffix = '?'+request.url.query if request.url.query else ''
 
         self.target = f"{API_URL}/{URL_MAP[prefix]}{suffix}"
-        self.method = method
+        self.method = request.method
         self.data = data
         self.status = "Erro Genérico"
         self.msg = "Erro Genérico Não Tratado"
         self.done = asyncio.Event()
-
 
 #metodo generico pra organizar todos os eventos recebidos
 @app.api_route("/{target:path}", methods=["GET", "POST", "PUT", "DELETE"])
@@ -43,13 +43,13 @@ async def newEvent(target, request:Request):
     data = None if request.method == "GET" else await request.json()
     
     #adiciona novo evento a fila
-    event = Event(target, request.method, data)
+    event = Event(target, request, data)
     await queue.put(event)
 
     #espera evento ser processado
     await event.done.wait()
 
-    #retorna statusados
+    #retorna status
     return {"status": event.status, "msg": event.msg, "data": event.data}
 
 #processa os eventos da fila enviando para API(s) de processamento

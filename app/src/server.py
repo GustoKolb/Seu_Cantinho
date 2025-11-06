@@ -1,7 +1,16 @@
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 import db as dbManager
+from urllib.parse import unquote
+import json
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 ACTIONS = {
     "POST": "create",
@@ -44,6 +53,14 @@ def get_target(target, search_string=None, search_filters=None):
                 results = dbManager.read_user(byName=search_string)
             case 'places':
                 results = dbManager.read_place(byName=search_string)
+
+        #aplica filtros do tipo atributo:
+        #   o objeto possui aquele campo e com o valor especificado
+        search_filters = search_filters or {}
+        search_filters = json.loads(unquote(search_filters))
+        results = [r for r in results if all(getattr(r, k, None) == v
+                                         for k, v in search_filters.items())]
+
         msg = "Pesquisa Realizada Com Sucesso"
         status='ok'
     except:

@@ -26,7 +26,7 @@ def create_user(**kwargs):
     return 0
 
 #le um ou mais usuarios de acordo com os filtros de nome ou id
-def read_user(byId=None, byName=None):
+def read_user(byId=None, byName=None, byPassword=None):
     #nenhum filtro de usuario, retorna todos
     if byId is None and byName is None:
         return users
@@ -56,3 +56,6 @@ def delete_user(**kwargs):
         return 1
     users.remove(user)
     return 0
+
+#cria usuario administrador padrao
+users.append(User("admin", "admin", 0, True))
