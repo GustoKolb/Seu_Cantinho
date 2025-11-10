@@ -13,7 +13,7 @@
 </style>
 
 <body>
-    <div id="menu" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(5rem, 18rem)); gap:1rem; padding:1rem;">
+    <div id="menu" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(5rem, 18rem)); gap:1rem; padding:1rem; text">
         <!-- Os blocos são inseridos aqui -->
     </div>
 
@@ -28,7 +28,10 @@
 
             const locais = await fetch(url, {method: 'GET', headers: {'Content-Type': 'application/json'}})
                                 .then(r => r.ok && r.json()).then(j => j.data).catch(() => false);
-                                
+            if (!locais){
+                document.getElementById('menu').innerText = "Erro Ao Se Comunicar Com O Servidor"
+            }
+
             const menu = document.getElementById("menu");
             locais.forEach(local => {
                 local.imagem = DEFAULT_IMAGE;//ADICIONA PQ N TEM AINDA
