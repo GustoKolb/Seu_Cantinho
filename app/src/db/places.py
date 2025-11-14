@@ -4,11 +4,14 @@ places = []   # lista de todos os locais
 place_counter = 0
 
 class Place:
-    def __init__(self, name, location, price):
+    def __init__(self, name, location, description, price, capacity, images):
         global place_counter
         self.name = name
         self.price = price
         self.location = location
+        self.description = description
+        self.images = images
+        self.capacity = capacity
         self.id = place_counter
         place_counter+=1
 
@@ -53,8 +56,8 @@ def delete_place(**kwargs):
     return 0
 
 #cria uns locais para teste
-places.append(Place("Teste 0", "Local 0", "Preço 0"))
-places.append(Place("Teste 1", "Local 1", "Preço 1"))
-places.append(Place("Teste 2", "Local 2", "Preço 2"))
-places.append(Place("Teste 3", "Local 3", "Preço 3"))
-places.append(Place("Teste 4", "Local 4", "Preço 4"))
+places.append(Place("Teste 0", "Local 0", "um cu", 9.99, 4, ["chiyo.jpeg"]))
+places.append(Place("Teste 1", "Local 1", "um krl", 23.4, 2, ["bagre.jpeg"]))
+places.append(Place("Teste 2", "Local 2", "um kct", "2422.02", 1, ["chiyo.jpeg", "bagre.jpeg"]))
+places.append(Place("Teste 3", "Local 3", "um kbr", 6.66, 7, ["bagre.jpeg","chiyo.jpeg"]))
+places.append(Place("Nome Grandao hhuehue Teekçrv eriv psir vhste 4", "Localizacao eihr pep reh vp l N°4", "Descricao agavaasa  vkrdv paerivnrei viernvieri veirv iper vpie vriv erpuvher vue rvuh erovu ervu ergv ergv eurg voeg rvuoe grvouer vouer voug reouv oeu vrogveo rvouge rvo cu", "45.67", 69, ["chiyo.jpeg", "bagre.jpeg", "chiyo.jpeg", "chiyo.jpeg", "bagre.jpeg", "chiyo.jpeg", "bagre.jpeg", "bagre.jpeg", "chiyo.jpeg"]))

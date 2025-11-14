@@ -4,38 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seu Cantinho - Menu</title>
-    
 </head>
-<style>
-    * {
-        margin:0;
-    }
-</style>
 
 <body>
-    <div id="menu" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(5rem, 18rem)); gap:1rem; padding:1rem; text">
-        <!-- Os blocos são inseridos aqui -->
-    </div>
+    <div id="menu" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(5rem, 18rem)); gap:1rem; padding:1rem; text-wrap: nowrap;"></div>
 
     <script>
         const BROKER_URL = "http://localhost:8000"
         const ENDPOINT_LOCAIS = "locais"
-        const DEFAULT_IMAGE='images/chiyo.jpeg'
+        const ENDPOINT_IMAGENS = "imagens"
         pesquisar_locais()//carrega menu com todos os locais
 
         async function pesquisar_locais(search_string='', filtros=''){
             const url = `${BROKER_URL}/${ENDPOINT_LOCAIS}?search_string=${encodeURIComponent(search_string)}&search_filters=${encodeURIComponent(filtros)}`
 
             const locais = await fetch(url, {method: 'GET', headers: {'Content-Type': 'application/json'}})
-                                .then(r => r.ok && r.json()).then(j => j.data).catch(() => false);
+                                        .then(r => r.ok && r.json()).then(j => j.data).catch(() => false);
+                                        
             if (!locais){
                 document.getElementById('menu').innerText = "Erro Ao Se Comunicar Com O Servidor"
+                return;
             }
 
             const menu = document.getElementById("menu");
-            locais.forEach(local => {
-                local.imagem = DEFAULT_IMAGE;//ADICIONA PQ N TEM AINDA
-
+            locais.forEach(async local => {
                 // estilizacao do bloco maior que possui as infos
                 const bloco = document.createElement("div");
                 bloco.style.flex = "0 0 200px";
@@ -43,12 +35,14 @@
                 bloco.style.borderRadius = "10px";
                 bloco.style.padding = "10px";
                 bloco.style.textAlign = "left";
+                bloco.style.textWrap = "wrap";
                 bloco.style.background = "white";
                 bloco.style.cursor =  "pointer";
                 
                 // imagem
                 const img = document.createElement("img");
-                img.src = local.imagem;
+                const data_b64 = await fetch(`${BROKER_URL}/${ENDPOINT_IMAGENS}/${local.images[0]}`).then(r=>r.json()).then(j=>j.data);//usa primeira imagem de capa
+                img.src = "data:image/jpeg;base64," + data_b64;
                 img.style.width = "100%";
                 img.style.borderRadius = "5px";
                 bloco.appendChild(img);
@@ -59,16 +53,22 @@
                 nome.style.margin = "10px 0";
                 nome.style.fontSize="1rem";
                 bloco.appendChild(nome);
-                
-                // transformar todo o bloco em algo clicavel, redireciona pra pagina especifica do local
+
+                console.log(local)
+
+                // transformar todo o bloco em algo clicavel, redireciona pra pagina do local construida dinamicamente
                 bloco.onclick = () => {
-                    window.location.href =
-                    `produto.html?nome=${encodeURIComponent(local.name)}` +
-                    `&imagem=${encodeURIComponent(local.imagem)}` +
-                    `&descricao=${encodeURIComponent(local.descricao || "")}`;
+                    window.location.href ='produto.html'+
+                    `?name=${encodeURIComponent(local.name)}` +
+                    `&images=${encodeURIComponent(local.images)}` +
+                    `&description=${encodeURIComponent(local.description)}`+
+                    `&address=${encodeURIComponent(local.location)}`+
+                    `&price=${encodeURIComponent(local.price)}` +
+                    `&capacity=${encodeURIComponent(local.capacity)}` +
+                    '';
                 };
                 
-                // adiciona ao carrosel
+                // adiciona ao 'cardapio'
                 menu.appendChild(bloco);
             });
         }

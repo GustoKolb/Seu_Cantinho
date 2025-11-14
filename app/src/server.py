@@ -1,8 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-import db as dbManager
+from fastapi.responses import FileResponse
 from urllib.parse import unquote
 import json
+import os
+import base64
+import db as dbManager
 
 app = FastAPI()
 app.add_middleware(
@@ -11,6 +14,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+#caminho pro diretorio de imagens
+IMAGE_FOLDER = 'db/images/'
 
 #prefixo pra construcao de nome da funcao
 ACTIONS = {
@@ -22,7 +28,7 @@ ACTIONS = {
 @app.api_route("/{target}", methods=["POST", "PUT", "DELETE"])
 async def nonGetHandler(target, request: Request):
     data = await request.json()
-    
+
     #define o metodo
     action = ACTIONS.get(request.method)
     if not action:
@@ -40,12 +46,27 @@ async def nonGetHandler(target, request: Request):
     match exit_code:
         case  0: msg = f"{request.method} /{target} executado com sucesso"
         case  1: msg = f"Parâmetro inválido em {request.method} /{target}"
-        case _:  msg = f"Erro desconhecido em {request.method} /{target}"
+        case _:  msg = f"Erro desconhecido ({exit_code}) em {request.method} /{target} ({func_name})"
 
     return {'status': status, 'msg': msg}
 
+#GET especifico pra carregamento de imagens
+@app.get("/images/{filename}")
+def get_file(filename):
+    path = os.path.join(IMAGE_FOLDER, filename)
+
+    if not os.path.isfile(path):
+        raise HTTPException(404)
+    
+    with open(path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode()
+    
+    return {"status": "ok", 'msg':'Imagem Retornada em Base 64',"data": b64}
+
+#GET generico pra acesso ao bd
 @app.get("/{target}")
 def get_target(target, search_string=None, search_filters=None):
+    results=None
     try:
         match target:
             case 'bookings':

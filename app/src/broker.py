@@ -5,7 +5,6 @@ import requests
 import asyncio
 import time
 
-
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -23,14 +22,16 @@ URL_MAP = {
     "reservas": "bookings",
     "locais": "places",
     "usuarios": "users",
+    "imagens": "images",
 }
 
 class Event:
     def __init__(self, target, request, data):
-        prefix = target
-        suffix = '?'+request.url.query if request.url.query else ''
+        prefix = target.split('/')[0]
+        suffix = '/'.join(target.split('/')[1:]) if len(target.split('/'))>1 else ''
+        suffix = '?'+request.url.query if request.url.query else suffix
 
-        self.target = f"{API_URL}/{URL_MAP[prefix]}{suffix}"
+        self.target = f"{API_URL}/{URL_MAP[prefix]}/{suffix}"
         self.method = request.method
         self.data = data
         self.status = "Erro Genérico"
@@ -56,12 +57,12 @@ async def newEvent(target, request:Request):
 async def process_events():
     while True:
         event = await queue.get()
-
+        r = {}
         try:
             match event.method:
                 case "GET":
                     r = requests.get(event.target).json()
-                    event.data = r.get('data')
+                    event.data = r.get("data")
                 case "POST":
                     r = requests.post(event.target, json=event.data).json()
                 case "PUT":
