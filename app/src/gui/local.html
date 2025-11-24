@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Seu Cantinho - Local</title>
+  <!--calendario custom-->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+    }
+    
+    /* container geral */
+    .produto-container {
+        display: flex;
+        justify-content: space-around;
+        padding: 3rem;
+        gap: 3rem;
+    }
+
+    /* galeria de imagens */
+    #galeria {
+        width: 50%;
+        min-width: 20rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    #img-principal {
+        width: 24rem;
+        height: 24rem;
+        object-fit: contain;
+        background: #fff;
+        border-radius: 8px;
+    }
+
+    #thumbnails {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 1rem;
+    }
+
+    #thumbnails img {
+        width: 4rem;
+        height: 4rem;
+        object-fit: cover;
+        cursor: pointer;
+        border-radius: 6px;
+        background:#fff;
+    }
+
+    #thumbnails img:hover {
+        border-style: solid;
+        border-width: 2px;
+        border-color: #007bff;
+    }
+
+    /* seção de informações */
+    .info {
+        flex: 0;
+    }
+
+    /* bloco de reserva */
+    .reserva {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        max-width: fit-content;
+    }
+
+    .reserva h3 {
+        display: flex;
+        justify-content: center;
+        margin: 0;
+    }
+
+    .reserva #botao_reservar{
+        width: 100%;
+        height: 2rem;
+        font-size:medium;
+    }
+
+    .pay_line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .flatpickr-disabled {
+        background: #ffffff !important;
+    }
+
+</style>
+
+
+<body style="margin:0;">
+  <iframe src="topBar.html" style="width:100%;height:60px;border:none;margin:0;" scrolling="no"></iframe>
+
+  <div class="produto-container">
+    <div id="galeria">
+        <img id="img-principal" class="principal">
+        <div id="thumbnails"></div>
+        <h1 id="name"></h1>
+        <p  id="description"></p>
+    </div>
+    <div class="info">
+        <h3 id="address"></h3>
+        <h3>Capacidade: <span id="capacity"></span> Pessoas</h3>
+        <h2>Preço: <span id="price"></span> / Dia</h2>
+
+        
+        <div class="reserva">
+            <h3>Informações do Cliente</h3>
+            <div style="display:flex; flex-direction:column; gap:0.5rem; margin:1rem;">
+                <input id="cliente_nome" type="text" placeholder="Nome completo">
+                <input id="cliente_telefone" type="text" placeholder="Telefone">
+                <input id="cliente_email" type="email" placeholder="E-mail">
+            </div>
+
+
+            <h3>Selecionar Período de Locação</h3>
+            <div id="selecionar-datas" style="display: flex; align-items: center; gap: 1rem;">
+                <input id="start_date" type="date" placeholder="Selecionar Dia de Início"/>
+                <p>→</p>
+                <input id="end_date" type="date" placeholder="Selecionar Dia de Término"/>
+            </div>
+            
+
+            <h3>Pagamento</h3>
+            <div style="display:flex; flex-direction:column; margin:1rem;">
+                <div class="pay_line">
+                    <p>Valor Pago Pelo Cliente:</p>
+                    <input id="valor_pago" type="number" placeholder="Insira O Valor Pago"></input>
+                </div>
+                <div class="pay_line">
+                    <p>Total A Pagar: </p>
+                    <div>R$ <span id="valor_total">0,00</span></div>
+                </div>
+            </div>            
+            
+            <button id="botao_reservar" onclick="reservar()">Confirmar Reserva</button>
+        </div>    
+    </div>
+  </div>
+</body>
+
+<script src="config.js"></script>
+<script src="topBar.js"></script>
+<script>
+    const BROKER_URL = window.CONFIG.BROKER_URL;
+    const ENDPOINT_IMAGENS = window.CONFIG.ENDPOINT_IMAGENS;
+    const ENDPOINT_LOCAIS = window.CONFIG.ENDPOINT_LOCAIS;
+    const ENDPOINT_RESERVAS = window.CONFIG.ENDPOINT_RESERVAS;
+    loadPlacePage()
+
+    //se pesquisou, volta pro menu com a pesquisa feita
+    window.onTopbarSearch = async function(filters){
+        // monta query string a partir do objeto filters
+        const query = new URLSearchParams();
+        for (const key in filters) {
+            if (filters[key] !== undefined && filters[key] !== null) {
+                query.append(key, filters[key]);
+            }
+        }
+
+        window.location.href = "menu.html?"+query.toString()
+    };
+
+    async function loadPlacePage (){
+        const place_id = new URLSearchParams(window.location.search).get("id");
+        const url = `${BROKER_URL}/${ENDPOINT_LOCAIS}?byId=${place_id}`;
+        const local = await fetch(url, {method: 'GET', headers: {'Content-Type': 'application/json'}})
+                                    .then(r => r.ok && r.json()).then(j => j.data).catch(() => false);
+        const address = [local["country"],local['state'],local['city'],local['district']].join(' - ');
+
+        document.getElementById('name').innerText = local["name"];
+        document.getElementById('address').innerText = address;
+        document.getElementById('description').innerText = local["description"];
+        document.getElementById('price').innerText = local["price"];
+        document.getElementById('capacity').innerText = local["capacity"];
+
+        for (const image of local.images) {
+            const j = await fetch(`${BROKER_URL}/${ENDPOINT_IMAGENS}/${image}`).then(r => r.json());
+
+            const img = document.createElement("img");
+            img.src = "data:image/jpeg;base64," + j.data;
+
+            // primeira imagem = principal
+            if (!document.getElementById("thumbnails").firstChild)
+                document.getElementById("img-principal").src = img.src;
+
+            img.addEventListener("mouseover", () => trocarImg(img));
+            document.getElementById("thumbnails").appendChild(img);
+        }
+    }
+
+    function trocarImg(el) {
+        document.getElementById("img-principal").src = el.src;
+    }
+
+
+///////////////////////////////////////////////////////////////////////
+    const inputStart = document.getElementById('start_date');
+    const inputEnd   = document.getElementById('end_date');
+
+    inputStart.addEventListener('change', calcularTotal);
+    inputEnd.addEventListener('change', calcularTotal);
+
+    function getDay(dmy_string){
+        const [d, m, y] = dmy_string.split('T')[0].split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+
+    function calcularTotal() {
+        const s = inputStart.value;
+        const e = inputEnd.value;
+        if (!s || !e) return;
+
+        const start = getDay(s);
+        const end   = getDay(e);
+
+        // dias corretos (incluindo ambos os dias)
+        const days = ((end - start) / 86400000) + 1;//de milisegundos pra dias inteiros
+        if (days <= 0) return;
+
+        const preco = Number(document.getElementById('price').innerText);
+        const total = days * preco;
+
+        document.getElementById('valor_total').innerText = total.toFixed(2);
+    }
+
+
+    const PLACE_ID = new URLSearchParams(window.location.search).get("id");
+    let blockedRanges = [];
+    loadReservas().then(applyCalendar);
+
+    async function loadReservas() {
+        const url = `${BROKER_URL}/${ENDPOINT_RESERVAS}?byPlaceId=${PLACE_ID}`;
+        const r = await fetch(url).then(r => r.json()).then(j=>j.data).catch(() => []);
+        blockedRanges = [];
+
+        //interface pro calendario do flatpickr
+        r.forEach(res => {
+            blockedRanges.push({
+                from: getDay(res.start_date),
+                to:   getDay(res.end_date)
+            });
+        });
+    }
+
+    function applyCalendar() {
+        flatpickr("#start_date", {
+            dateFormat: "d-m-Y",
+            disable: blockedRanges,
+            disableMobile: false,
+        });
+
+        flatpickr("#end_date", {
+            dateFormat: "d-m-Y",
+            disable: blockedRanges,
+            disableMobile: false,
+        });
+    }
+
+    function reservar() {
+        const startStr = document.getElementById("start_date").value;
+        const endStr   = document.getElementById("end_date").value;
+
+        const start = getDay(document.getElementById("start_date").value);
+        const end   = getDay(document.getElementById("end_date").value);
+        
+        if ((!start || !end) || start > end){
+            alert("O Período Selecionado É Inválido")
+            return;
+        }
+
+        // valida se está tentando reservar período bloqueado
+        for (const r of blockedRanges)
+            if (start <= r.to && end >= r.from) return;
+
+        const valor_pago  = parseFloat(document.getElementById('valor_pago').value)
+        const valor_total = parseFloat(document.getElementById('valor_total').innerText);
+
+        if (valor_pago > valor_total){
+            alert("Valor Pago Maior Que O Valor Total")
+            return;
+        }
+
+        fetch(`${BROKER_URL}/${ENDPOINT_RESERVAS}`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                client_name:  document.getElementById('cliente_nome').value,
+                client_phone: document.getElementById('cliente_telefone').value,
+                client_email: document.getElementById('cliente_email').value,
+                amount_paid:  valor_pago,
+                total_amount: valor_total,
+                place_id: PLACE_ID,
+                start_date: startStr,
+                end_date: endStr,
+            })
+        }).then(r => {
+            if (!r.ok) return;
+            document.getElementById("start_date").value = "";
+            document.getElementById("end_date").value = "";
+            alert("Reserva Realizada Com Sucesso")
+            return loadReservas().then(applyCalendar);
+        });
+    }
+
+</script>
+
+</html>

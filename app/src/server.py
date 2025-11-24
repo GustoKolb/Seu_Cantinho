@@ -21,21 +21,33 @@ IMAGE_FOLDER = 'db/images/'
 #prefixo pra construcao de nome da funcao
 ACTIONS = {
     "POST": "create",
-    "PUT": "update",
+    "PATCH": "update",
     "DELETE": "delete",
 }
 
-@app.api_route("/{target}", methods=["POST", "PUT", "DELETE"])
+ENDPOINT_PLACES = os.getenv("ENDPOINT_PLACES")
+ENDPOINT_BOOKINGS = os.getenv("ENDPOINT_BOOKINGS")
+ENDPOINT_USERS = os.getenv("ENDPOINT_USERS")
+ENDPOINT_IMAGES = os.getenv("ENDPOINT_IMAGES")
+
+@app.api_route("/{target}", methods=["POST", "PATCH", "DELETE"])
 async def nonGetHandler(target, request: Request):
     data = await request.json()
 
-    #define o metodo
+    #mapeamento de metodos->acoes
     action = ACTIONS.get(request.method)
     if not action:
         return {'status': 'error', 'msg': f'Método {request.method} não suportado'}
+    
+    obj = None
+    if target == ENDPOINT_PLACES:
+        obj = 'place'
+    if target == ENDPOINT_BOOKINGS:
+        obj = 'booking'
+    if target == ENDPOINT_USERS:
+        obj = 'user'
 
-    #constroi nome da funcao: create_user, update_place, etc...
-    func_name = f"{action}_{target[:-1]}"
+    func_name = f"{action}_{obj}"
     func = getattr(dbManager, func_name, None)
     if not func:
         return {'status': 'error', 'msg': f"Endpoint inexistente (/{target})"}
@@ -51,7 +63,7 @@ async def nonGetHandler(target, request: Request):
     return {'status': status, 'msg': msg}
 
 #GET especifico pra carregamento de imagens
-@app.get("/images/{filename}")
+@app.get(f"/{ENDPOINT_IMAGES}/{{filename}}")
 def get_file(filename):
     path = os.path.join(IMAGE_FOLDER, filename)
 
@@ -65,23 +77,17 @@ def get_file(filename):
 
 #GET generico pra acesso ao bd
 @app.get("/{target}")
-def get_target(target, search_string=None, search_filters=None):
+def get_target(target: str, request: Request):
+    filters = dict(request.query_params)
     results=None
-    try:
-        match target:
-            case 'bookings':
-                results = dbManager.read_booking(byName=search_string)
-            case 'users':
-                results = dbManager.read_user(byName=search_string)
-            case 'places':
-                results = dbManager.read_place(byName=search_string)
 
-        #aplica filtros do tipo atributo:
-        #   o objeto possui aquele campo e com o valor especificado
-        if search_filters:
-            search_filters = json.loads(unquote(search_filters))
-            results = [r for r in results if all(getattr(r, k, None) == v
-                                             for k, v in search_filters.items())]
+    try:
+        if target == ENDPOINT_BOOKINGS:
+            results = dbManager.read_booking(**filters)
+        elif target == ENDPOINT_USERS:
+            results = dbManager.read_user(**filters)
+        elif target == ENDPOINT_PLACES:
+            results = dbManager.read_place(**filters)
 
         msg = "Pesquisa Realizada Com Sucesso"
         status='ok'

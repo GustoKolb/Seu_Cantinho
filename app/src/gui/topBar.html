@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Barra fixa no topo */
+#topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: max-content;
+
+    background-color: #222;
+    color: white;
+    box-sizing: border-box;
+}
+
+/* Lado esquerdo */
+#topbar-left {
+    display: flex;
+    padding-left: 1rem;
+    align-items: center;
+}
+
+#nav-btn {
+    background-color: #444;
+    color: white;
+    border: none;
+    padding: 6px 15px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+#nav-btn:hover {
+    background-color: #666;
+}
+
+/* Centro */
+#topbar-center {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem;
+}
+
+#search-input {
+    flex: 1;
+    padding: 6px;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+}
+
+#search-btn {
+    background-color: #ff6600;
+    border: none;
+    padding: 6px 12px;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#search-btn:hover {
+    background-color: #e65c00;
+}
+
+/* Avatar + Dropdown */
+#topbar-right {
+    display: flex;
+    padding-right: 1rem;
+    align-items: center;
+}
+
+#avatar-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+
+    background-image: url('https://cdn-icons-png.flaticon.com/512/149/149071.png');
+    background-size: cover;
+    background-position: center;
+}
+
+</style>
+</head>
+<body>
+
+<div id="topbar">
+    <div id="topbar-left">
+        <button id="nav-btn" onclick='parent.location.href = "menu.html"'>Menu Principal</button>
+    </div>
+
+    <div id="topbar-center">
+        <input id="search-input" type="text" placeholder="Pesquisar locais...">
+        <button id="filter-btn">Filtros ▼</button>
+        <button id="search-btn">Buscar</button>
+    </div>
+
+    <div id="topbar-right">
+        <button id="avatar-btn"></button>
+        <div id="dropdown"></div>
+    </div>
+</div>
+
+<script src="topBar.js"></script>
+<script>
+    // dropdown
+    document.getElementById("avatar-btn").onclick = () => {
+        const dd = document.getElementById("dropdown");
+        dd.style.display = dd.style.display == "flex" ? "none" : "flex";
+    };
+
+</script>
+
+</body>
+</html>

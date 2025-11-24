@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seu Cantinho - Entrar</title>
-    <link rel="stylesheet" href="login.css">
 </head>
 
 <body>
@@ -16,12 +15,16 @@
             <button onclick="loginUser()">Entrar</button>
         </div>
         <div id="msg"></div>
+        <p><i>admin</i> como usuário e senha padrão</p>
     </div>
 
+    <script src="config.js"></script>
     <script>
-        const BROKER_URL = "http://localhost:8000"
-        const ENDPOINT_USUARIOS = "usuarios"
+        const BROKER_URL = window.CONFIG.BROKER_URL;
+        const ENDPOINT_USUARIOS = window.CONFIG.ENDPOINT_USUARIOS;
         document.getElementById('user').value = ""
+        localStorage.removeItem('userIsAdmin');//garante armazenamento limpo
+        document.getElementById('password').addEventListener("keydown", e => {if (e.key === 'Enter') loginUser();})
 
         async function loginUser() {
             const msg = document.getElementById('msg');
@@ -31,16 +34,63 @@
             const password = document.getElementById('password').value;
 
             //GET url pra validar se (user, password) correspondem a alguem no BD
-            const url = `${BROKER_URL}/${ENDPOINT_USUARIOS}?search_string=${encodeURIComponent(user)}&search_filters={"password":"${encodeURIComponent(password)}"}`
+            const url = `${BROKER_URL}/${ENDPOINT_USUARIOS}?byName=${user}&byPassword=${password}`
 
-            const validated = await fetch(url, {method: 'GET', headers: {'Content-Type': 'application/json'}})
-                                .then(r => r.ok && r.json()).then(j => j.data.length > 0).catch(() => false);
+            const data = await fetch(url, {method: 'GET', headers: {'Content-Type': 'application/json'}})
+                                .then(r => r.ok && r.json()).then(j => j.data).catch(() => false);
 
-            if (validated)
-                window.location.href = "menu.html"
-            else
+            if (!data.length){//sem login valido
                 msg.innerText = "Usuário e/ou Senha Incorretos";
+                return;
+            }
+
+            localStorage.setItem('userIsAdmin', data[0].isAdmin);
+            window.location.href = "menu.html"
         }
     </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.2);
+            width: 300px;
+            text-align: center;
+        }
+
+        .card input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+
+        .btn-row {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 12px;
+        }
+
+        #msg {
+            margin-top: 10px;
+            color: red;
+        }
+    </style>
 </body>
 </html>

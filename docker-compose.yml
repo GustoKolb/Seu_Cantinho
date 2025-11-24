@@ -1,0 +1,45 @@
+x-endpoints-client: &endpoints_client
+  ENDPOINT_LOCAIS: "locais"
+  ENDPOINT_USUARIOS: "usuarios"
+  ENDPOINT_IMAGENS: "imagens"
+  ENDPOINT_RESERVAS: "reservas"
+
+x-endpoints-server: &endpoints_server
+  ENDPOINT_USERS: "users"
+  ENDPOINT_IMAGES: "images"
+  ENDPOINT_BOOKINGS: "bookings"
+  ENDPOINT_PLACES: "places"
+
+services:
+  client:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.client
+    ports:
+      - "8000:8000"
+    environment:
+      BROKER_URL: "http://localhost:8001" #acessado pelo navegador fora do docker
+      <<: *endpoints_client
+    depends_on:
+      - broker
+
+  broker:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.broker
+    ports:
+      - "8001:8001"
+    environment:
+      SERVER_URL: "http://server:8002" #acessado internamente pelo broker
+      <<: [ *endpoints_client, *endpoints_server ]
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.server
+    ports:
+      - "8002:8002"
+    environment:
+      <<: *endpoints_server

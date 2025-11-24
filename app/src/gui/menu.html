@@ -6,29 +6,52 @@
     <title>Seu Cantinho - Menu</title>
 </head>
 
-<body>
+<body style="margin:0;">
+    <iframe src="topBar.html" style="width:100%;height:60px;border:none;margin:0;" scrolling="no"></iframe>
+
     <div id="menu" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(5rem, 18rem)); gap:1rem; padding:1rem; text-wrap: nowrap;"></div>
 
+    <script src="config.js"></script>
+    <script src="topBar.js"></script>
     <script>
-        const BROKER_URL = "http://localhost:8000"
-        const ENDPOINT_LOCAIS = "locais"
-        const ENDPOINT_IMAGENS = "imagens"
-        pesquisar_locais()//carrega menu com todos os locais
+        const menu = document.getElementById("menu");
+        start_menu()
+        
+        async function start_menu(){
+            const query = new URLSearchParams(location.search).toString()
+            if (location.search)
+                history.replaceState(null, "", location.origin+location.pathname)
 
-        async function pesquisar_locais(search_string='', filtros=''){
-            const url = `${BROKER_URL}/${ENDPOINT_LOCAIS}?search_string=${encodeURIComponent(search_string)}&search_filters=${encodeURIComponent(filtros)}`
+            const locais = await window.fetchPlaces(query)
 
-            const locais = await fetch(url, {method: 'GET', headers: {'Content-Type': 'application/json'}})
-                                        .then(r => r.ok && r.json()).then(j => j.data).catch(() => false);
-                                        
             if (!locais){
                 document.getElementById('menu').innerText = "Erro Ao Se Comunicar Com O Servidor"
+                return
+            }
+            if (!locais.length){
+                document.getElementById('menu').innerText = "Nenhum local encontrado"
                 return;
             }
 
+            load_menu(locais, menu)
+        }
+
+        window.onTopbarSearch = async function(filters){
+            const locais = await window.fetchPlaces(filters);
             const menu = document.getElementById("menu");
-            locais.forEach(async local => {
-                // estilizacao do bloco maior que possui as infos
+            menu.innerHTML = "";
+
+            if (!locais || locais.length === 0) {
+                menu.innerText = "Nenhum local encontrado";
+                return;
+            }
+
+            load_menu(locais, menu);
+        };
+
+        function load_menu(locais, menu){
+            menu.innerHTML = "";
+            for (const local of locais) {
                 const bloco = document.createElement("div");
                 bloco.style.flex = "0 0 200px";
                 bloco.style.border = "1px solid #ccc";
@@ -37,40 +60,33 @@
                 bloco.style.textAlign = "left";
                 bloco.style.textWrap = "wrap";
                 bloco.style.background = "white";
-                bloco.style.cursor =  "pointer";
-                
-                // imagem
+                bloco.style.cursor = "pointer";
+
                 const img = document.createElement("img");
-                const data_b64 = await fetch(`${BROKER_URL}/${ENDPOINT_IMAGENS}/${local.images[0]}`).then(r=>r.json()).then(j=>j.data);//usa primeira imagem de capa
-                img.src = "data:image/jpeg;base64," + data_b64;
+                fetch(`${window.CONFIG.BROKER_URL}/${window.CONFIG.ENDPOINT_IMAGENS}/${local.images[0]}`).then(r => r.json()).then(j => {
+                    img.src = "data:image/jpeg;base64," + j.data;
+                });
                 img.style.width = "100%";
                 img.style.borderRadius = "5px";
                 bloco.appendChild(img);
 
-                // nome
                 const nome = document.createElement("div");
                 nome.innerText = local.name;
-                nome.style.margin = "10px 0";
-                nome.style.fontSize="1rem";
+                nome.style.margin = "10px auto";
                 bloco.appendChild(nome);
 
-                console.log(local)
+                const preco = document.createElement("div");
+                preco.innerText = '$' + local.price;
+                bloco.appendChild(preco);
 
-                // transformar todo o bloco em algo clicavel, redireciona pra pagina do local construida dinamicamente
-                bloco.onclick = () => {
-                    window.location.href ='produto.html'+
-                    `?name=${encodeURIComponent(local.name)}` +
-                    `&images=${encodeURIComponent(local.images)}` +
-                    `&description=${encodeURIComponent(local.description)}`+
-                    `&address=${encodeURIComponent(local.location)}`+
-                    `&price=${encodeURIComponent(local.price)}` +
-                    `&capacity=${encodeURIComponent(local.capacity)}` +
-                    '';
-                };
-                
-                // adiciona ao 'cardapio'
+                const info = document.createElement("div");
+                info.innerHTML = `<b>Local</b>: ${local.country} - ${local.state} - ${local.city}<br><b>Capacidade</b>: ${local.capacity}`;
+                info.style.fontSize = "0.8rem";
+                bloco.appendChild(info);
+
+                bloco.onclick = () => {window.location.href = `local.html?id=${local.id}`;};
                 menu.appendChild(bloco);
-            });
+            }
         }
     </script>
 </body>

@@ -4,6 +4,7 @@ import threading
 import requests
 import asyncio
 import time
+import os
 
 app = FastAPI()
 app.add_middleware(
@@ -14,15 +15,16 @@ app.add_middleware(
 )
 
 queue = asyncio.Queue()
-API_URL = "http://127.0.0.1:8001" #url da api de processamento de eventos
 
+#env definido via docker
+API_URL = os.getenv("SERVER_URL")
 # mapeia rotas de client->broker para broker->server
 # nomes traduzidos apenas pra demonstrar remapeamento
 URL_MAP = {
-    "reservas": "bookings",
-    "locais": "places",
-    "usuarios": "users",
-    "imagens": "images",
+    os.getenv("ENDPOINT_RESERVAS") : os.getenv("ENDPOINT_BOOKINGS"),
+    os.getenv("ENDPOINT_LOCAIS")   : os.getenv("ENDPOINT_PLACES"),
+    os.getenv("ENDPOINT_USUARIOS") : os.getenv("ENDPOINT_USERS"),
+    os.getenv("ENDPOINT_IMAGENS")  : os.getenv("ENDPOINT_IMAGES"),
 }
 
 class Event:
@@ -39,7 +41,7 @@ class Event:
         self.done = asyncio.Event()
 
 #metodo generico pra organizar todos os eventos recebidos
-@app.api_route("/{target:path}", methods=["GET", "POST", "PUT", "DELETE"])
+@app.api_route("/{target:path}", methods=["GET", "POST", "PATCH", "DELETE"])
 async def newEvent(target, request:Request):
     data = None if request.method == "GET" else await request.json()
     
@@ -65,8 +67,9 @@ async def process_events():
                     event.data = r.get("data")
                 case "POST":
                     r = requests.post(event.target, json=event.data).json()
-                case "PUT":
-                    r = requests.put(event.target, json=event.data).json()
+                    print(r)
+                case "PATCH":
+                    r = requests.patch(event.target, json=event.data).json()
                 case "DELETE":
                     r = requests.delete(event.target, json=event.data).json()
                 case _:

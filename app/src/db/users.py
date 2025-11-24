@@ -25,19 +25,26 @@ def create_user(**kwargs):
     users.append(user)
     return 0
 
-#le um ou mais usuarios de acordo com os filtros de nome ou id
-def read_user(byId=None, byName=None, byPassword=None):
-    #nenhum filtro de usuario, retorna todos
+#le um ou mais usuarios de acordo com os filtros passados
+def read_user(**f):
+    byId   = f.get("byId")
+    byName = f.get("byName")
+    byPassword = f.get("byPassword")
+
     if byId is None and byName is None:
         return users
 
-    #filtra por id, retorna um User
     if byId is not None:
-        return next((u for u in users if u.id == byId), None)
-    #filtra por nome (substring normalizada), retorna lista de User
-    else:
-        byName = normalizeString(byName)
-        return [u for u in users if byName and byName in normalizeString(u.name)]
+        return next((u for u in users if u.id == int(byId)), [])
+    
+    #pesquisa qualquer por substring de nome
+    if byName is not None and byPassword is None:
+        byNameNorm = normalizeString(byName)
+        return [u for u in users if byNameNorm in normalizeString(u.name)]
+    
+    #caso de login
+    if byName is not None and byPassword is not None:
+        return [u for u in users if byName == u.name and byPassword == u.password]
 
 #atualiza informacoes de um usuario
 def update_user(**kwargs):
@@ -59,3 +66,4 @@ def delete_user(**kwargs):
 
 #cria usuario administrador padrao
 users.append(User("admin", "admin", 0, True))
+users.append(User("normal", "normal", 0, False))

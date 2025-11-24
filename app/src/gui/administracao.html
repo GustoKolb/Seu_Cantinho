@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Seu Cantinho</title>
+    <style>
+        body {
+            margin: 0;
+            padding-top: 60px; /* Espaço para a TopBar */
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        #content {
+            padding: 20px;
+        }
+        #tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ccc;
+        }
+        .tab-btn {
+            background-color: #eee;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 5px 5px 0 0;
+            transition: background-color 0.3s;
+        }
+        .tab-btn:hover {
+            background-color: #ddd;
+        }
+        .tab-btn.active {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-bottom: 1px solid #fff; /* Esconde a linha inferior */
+            font-weight: bold;
+        }
+        #data-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .action-btn {
+            padding: 5px 10px;
+            margin: 0 2px;
+            cursor: pointer;
+            border: none;
+            border-radius: 3px;
+            color: white;
+        }
+        .edit-btn { background-color: #ff6600; }
+        .delete-btn { background-color: #dc3545; }
+        .add-btn {
+            background-color: #28a745;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        td:last-child {
+            display: flex;
+            gap: 5px;
+        }
+        
+    </style>
+    <style>
+        /* Estilos do Modal */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 10000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.7); 
+            justify-content: center; 
+            align-items: center; 
+        }
+        .modal-content { 
+            background-color: #fefefe; 
+            margin: auto; 
+            padding: 20px; 
+            border: 1px solid #888; 
+            width: 80%; 
+            max-width: 600px; 
+            border-radius: 8px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+            position: relative; 
+            max-height: 90vh; 
+            overflow-y: auto; 
+        }
+        .close-btn { 
+            color: #aaa; 
+            float: right; 
+            font-size: 28px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            line-height: 1; 
+        }
+        .close-btn:hover, .close-btn:focus { 
+            color: black; 
+            text-decoration: none; 
+            cursor: pointer; 
+        }
+        .modal-content h2 { 
+            margin-top: 0; 
+            padding-bottom: 10px; 
+            border-bottom: 1px solid #ddd; 
+        }
+        
+        /* Estilos do Formulário */
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+        }
+        .form-group input[type="text"], 
+        .form-group input[type="password"], 
+        .form-group input[type="number"], 
+        .form-group input[type="email"], 
+        .form-group textarea, 
+        .form-group select, 
+        .form-group input[type="date"] { 
+            width: 95%; /* 100% menos padding */
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; /* Garante que o padding não estoure a largura */
+        }
+        .form-group textarea { 
+            resize: vertical; 
+            min-height: 80px; 
+        }
+        
+        /* Estilos dos Botões de Ação do Formulário */
+        .form-actions { 
+            padding-top: 15px; 
+            border-top: 1px solid #eee; 
+            text-align: right; 
+        }
+        .form-actions button { 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+        .form-actions .submit-btn { 
+            background-color: #ff6600; /* Cor Laranja */
+            color: white; 
+        }
+        .form-actions .cancel-btn { 
+            background-color: #ccc; 
+            color: #333; 
+            margin-right: 10px; 
+        }
+        .image-preview { 
+            max-width: 100%; 
+            max-height: 200px; 
+            margin-top: 10px; 
+            border: 1px solid #ddd; 
+            display: block; 
+        }
+    </style>
+</head>
+
+<body>
+    <iframe src="topBar.html" style="width:100%;height:60px;border:none;position:fixed;top:0;left:0;z-index:1000;" scrolling="no"></iframe>
+
+    <div id="content">
+        <h1>Painel Administrativo</h1>
+        
+        <div id="tabs">
+            <button class="tab-btn active" data-entity="usuarios">Usuários</button>
+            <button class="tab-btn" data-entity="locais">Locais</button>
+            <button class="tab-btn" data-entity="reservas">Reservas</button>
+        </div>
+
+        <div id="data-container">
+            <button class="add-btn" id="add-new-btn">Adicionar Novo</button>
+            <p id="loading-msg">Carregando dados...</p>
+            <div id="table-view">
+                </div>
+        </div>
+
+        <div id="crud-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="document.getElementById('crud-modal').style.display='none';">&times;</span>
+                <h2 id="modal-title"></h2>
+                
+                <form id="crud-form">
+                    <div id="form-content"></div> 
+                    
+                    <div class="form-actions">
+                        <button type="button" class="cancel-btn" onclick="document.getElementById('crud-modal').style.display='none';">Cancelar</button>
+                        <button type="submit" class="submit-btn" id="submit-form-btn">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="topBar.js"></script>
+    <script src="admin_handlers.js"></script><script>
+        let currentEntity = 'usuarios';
+        const config = window.CONFIG;
+        const modal = document.getElementById('crud-modal');
+        const crudForm = document.getElementById('crud-form'); // Precisa existir no HTML!
+
+        // Mapeamento de Funções do Arquivo Auxiliar (para uso interno)
+        const entityMapLocal = {
+            'usuarios': { getFormHTML: getUsuariosFormHTML, submit: submitUsuariosForm },
+            'locais': { getFormHTML: getLocaisFormHTML, submit: submitLocaisForm },
+            'reservas': { getFormHTML: getReservasFormHTML, submit: submitReservasForm },
+        };
+        
+        // --- FUNÇÕES DE UTENSÍLIO E CONTROLE (EXISTENTES NO SEU CÓDIGO) ---
+
+        function getEntityClass(e){
+            switch (e){
+                case 'usuarios': return 'Usuário';
+                case 'reservas': return 'Reserva';
+                case 'locais': return 'Local';
+                default: return 'Indefinido';
+            }
+        }
+        
+        function setupTabs() {
+            document.querySelectorAll('.tab-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    currentEntity = button.getAttribute('data-entity');
+                    const add_btn = document.getElementById('add-new-btn');
+                    add_btn.innerText = 'Adicionar ' + getEntityClass(currentEntity);
+                    loadEntity(currentEntity);
+                });
+            });
+        }
+        
+        // Função para abrir o Modal (POST/Criação ou PATCH/Edição)
+        window.openModal = function(entity, id = null, itemData = null) {
+            const data = id && itemData ? JSON.parse(itemData.replace(/&quot;/g, '"')) : {};
+            
+            currentEntity = entity;
+            const isEdit = !!id;
+            const formHTML = entityMapLocal[entity].getFormHTML(data); // Chama a função do arquivo externo
+            
+            document.getElementById('modal-title').innerText = `${isEdit ? 'Editar' : 'Criar Novo'} ${getEntityClass(entity)}`;
+            document.getElementById('form-content').innerHTML = formHTML;
+            
+            // Lógica de Preview de Imagem (do arquivo anterior, mantida aqui por simplicidade)
+            if (entity === 'locais') {
+                const imgInput = document.getElementById('image_upload');
+                if (imgInput) {
+                    imgInput.addEventListener('change', (e) => {
+                        const file = e.target.files[0];
+                        const previewContainer = document.getElementById('image-preview-container');
+                        if (file) {
+                            previewContainer.innerHTML = `<img src="${URL.createObjectURL(file)}" class="image-preview" alt="Preview da Imagem">`;
+                        } else {
+                            previewContainer.innerHTML = '';
+                        }
+                    });
+                }
+            }
+            modal.style.display = 'flex';
+        };
+
+        // --- FUNÇÃO DE CARREGAMENTO (AJUSTADA PARA USAR O NOVO FLUXO DE BOTÕES) ---
+
+        async function loadEntity(entity){
+            const container = document.getElementById('table-view');
+            const loadingMsg = document.getElementById('loading-msg');
+            container.innerHTML = '';
+            loadingMsg.style.display = 'block';
+
+            const endpointKey = 'ENDPOINT_' + entity.toUpperCase();
+            const endpoint = config[endpointKey];
+            
+            if (!endpoint) {
+                loadingMsg.innerText = `Erro: Endpoint para ${entity} não encontrado (${endpointKey}).`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${config.BROKER_URL}/${endpoint}`);
+                const data = await response.json();
+                
+                loadingMsg.style.display = 'none';
+                
+                if (data.data && data.data.length > 0) {
+                    renderTable(data.data, entity);
+                } else {
+                    container.innerHTML = `<p>Nenhum ${getEntityClass(entity)} encontrado.</p>`;
+                }
+
+            } catch (error) {
+                loadingMsg.innerText = `Erro ao carregar dados de ${entity}: ${error.message}`;
+                console.error('Erro de Fetch:', error);
+            }
+        }
+
+        // --- FUNÇÃO DE RENDERIZAÇÃO DA TABELA (AJUSTADA PARA CHAMAR OPEN MODAL E HANDLERS) ---
+
+        function renderTable(data, entity) {
+            const container = document.getElementById('table-view');
+            container.innerHTML = '';
+
+            if (data.length === 0) return;
+
+            const excludedKeys = ['images', 'password', 'description', 'client_email', 'client_phone', 'amount_paid'];
+            const idKey = entity === 'reservas' ? 'booking_id' : 'id'; // Chave primária
+            
+            const headers = Object.keys(data[0]).filter(key => !excludedKeys.includes(key));            
+            
+            let html = '<table><thead><tr>';
+            headers.forEach(key => {
+                html += `<th>${key.charAt(0).toUpperCase() + key.slice(1)}</th>`;
+            });
+            html += '<th>Ações</th></tr></thead><tbody>';
+
+            data.forEach(item => {
+                const itemJSON = JSON.stringify(item).replace(/"/g, '&quot;'); 
+
+                html += '<tr>';
+                headers.forEach(key => {
+                    let value = item[key];
+                    if (key === 'place') {
+                         value = item.place ? `ID: ${item.place.id}` : 'N/A';
+                    } else if (Array.isArray(value)) {
+                         value = value.length > 0 ? `${value.length} itens` : 'Nenhum';
+                    }
+                    html += `<td>${value}</td>`;
+                });
+                
+                html += `
+                    <td>
+                        <button class="action-btn edit-btn" onclick="openModal('${entity}', ${item[idKey]}, '${itemJSON}')">Editar</button>
+                        <button class="action-btn delete-btn" onclick="handleDelete('${entity}', ${item[idKey]}).then(success => success && loadEntity(entity))">Excluir</button>
+                    </td>
+                `;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // --- INICIALIZAÇÃO COM LISTENERS (AJUSTADOS) ---
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadEntity(currentEntity);
+            setupTabs();
+            
+            const add_btn = document.getElementById('add-new-btn');
+            add_btn.innerText = 'Adicionar ' + getEntityClass(currentEntity);
+
+            // Botão Adicionar: Abre o Modal para Criação
+            add_btn.onclick = () => {
+                window.openModal(currentEntity);
+            };
+
+            // Listener de Submissão do Formulário (POST ou PATCH)
+            crudForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const submitter = entityMapLocal[currentEntity].submit; // Chama a função do arquivo externo
+                
+                if (submitter) {
+                    const success = await submitter(currentEntity, crudForm);
+                    if (success) {
+                        modal.style.display = 'none';
+                        loadEntity(currentEntity); // Recarrega a tabela
+                    }
+                }
+            };
+        });
+    </script>
+</body>
+</html>

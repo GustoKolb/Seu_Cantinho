@@ -4,16 +4,23 @@ places = []   # lista de todos os locais
 place_counter = 0
 
 class Place:
-    def __init__(self, name, location, description, price, capacity, images):
+    def __init__(self, name, street, number, district, city, state, country,
+                                         description, price, capacity, images):
         global place_counter
-        self.name = name
-        self.price = price
-        self.location = location
-        self.description = description
-        self.images = images
-        self.capacity = capacity
         self.id = place_counter
-        place_counter+=1
+        place_counter += 1
+
+        self.name = name
+        self.street = street
+        self.number = number
+        self.district = district
+        self.city = city
+        self.state = state
+        self.country = country
+        self.description = description
+        self.price = price
+        self.capacity = capacity
+        self.images = images
 
     def __str__(self):
         return f"{self.id}: {self.name} - {self.location}"
@@ -27,17 +34,41 @@ def create_place(**kwargs):
     places.append(p)
     return 0
 
-#retorna lista de Place a depender dos filtros utilizados (somente 1 filtro por vez)
-def read_place(byName=None, byLocation=None, byId=None):
-    if byName is not None:
-        byName = normalizeString(byName)
-        return [p for p in places if byName in normalizeString(p.name)]
-    elif byLocation is not None:
-        return [p for p in places if byLocation == normalizeString(p.location)]
-    elif byId is not None:
-        return next((p for p in places if byId == p.id), None)
+def read_place(**f):
+    if f.get("byId") is not None:
+        return next((p for p in places if p.id == int(f["byId"])), [])
 
-    return places
+    results = places
+
+    if f.get("byName") is not None:
+        n = normalizeString(f["byName"])
+        results = [p for p in results if n in normalizeString(p.name)]
+
+    if f.get("byCountry") is not None:
+        results = [p for p in results if p.country == f["byCountry"]]
+
+    if f.get("byState") is not None:
+        results = [p for p in results if p.state == f["byState"]]
+
+    if f.get("byCity") is not None:
+        results = [p for p in results if p.city == f["byCity"]]
+
+    if f.get("byDistrict") is not None:
+        results = [p for p in results if p.district == f["byDistrict"]]
+
+    if f.get("byPriceMin") is not None:
+        results = [p for p in results if p.price >= float(f["byPriceMin"])]
+
+    if f.get("byPriceMax") is not None:
+        results = [p for p in results if p.price <= float(f["byPriceMax"])]
+
+    if f.get("byCapacityMin") is not None:
+        results = [p for p in results if p.capacity >= int(f["byCapacityMin"])]
+
+    if f.get("byCapacityMax") is not None:
+        results = [p for p in results if p.capacity <= int(f["byCapacityMax"])]
+
+    return results
 
 def update_place(**kwargs):
     p = read_place(byId=kwargs['place_id'])
@@ -56,8 +87,10 @@ def delete_place(**kwargs):
     return 0
 
 #cria uns locais para teste
-places.append(Place("Teste 0", "Local 0", "um cu", 9.99, 4, ["chiyo.jpeg"]))
-places.append(Place("Teste 1", "Local 1", "um krl", 23.4, 2, ["bagre.jpeg"]))
-places.append(Place("Teste 2", "Local 2", "um kct", "2422.02", 1, ["chiyo.jpeg", "bagre.jpeg"]))
-places.append(Place("Teste 3", "Local 3", "um kbr", 6.66, 7, ["bagre.jpeg","chiyo.jpeg"]))
-places.append(Place("Nome Grandao hhuehue Teekçrv eriv psir vhste 4", "Localizacao eihr pep reh vp l N°4", "Descricao agavaasa  vkrdv paerivnrei viernvieri veirv iper vpie vriv erpuvher vue rvuh erovu ervu ergv ergv eurg voeg rvuoe grvouer vouer voug reouv oeu vrogveo rvouge rvo cu", "45.67", 69, ["chiyo.jpeg", "bagre.jpeg", "chiyo.jpeg", "chiyo.jpeg", "bagre.jpeg", "chiyo.jpeg", "bagre.jpeg", "bagre.jpeg", "chiyo.jpeg"]))
+places.append(Place("Local Normal", "Rua A", "123", "Bairro B", "Cidade C", "Estado D", "País E", "Descrição normal", 50.0, 10, ["chiyo.jpeg"]))
+
+places.append(Place("Extremamente Longo " * 10, "Rua X", "9999", "Bairro Y", "Cidade Z", "Estado W", "País V", "Descrição muito longa" * 20, 999999.99, 1000, ["chiyo.jpeg", "bagre.jpeg"]))
+
+places.append(Place("Caracteres Especiais !@#$%^&*()", "Rúa ñ", "001", "Bairro *&^%", "Cítý Ç", "Estãdo", "Páis", "Descrição com símbolos ♥♦♣♠", 25.5, 5, ["bagre.jpeg"]))
+
+places.append(Place("Unicode 👍", "Rua Emoji", "4", "Bairro 😎", "Cidade 🏙️", "Estado 🌍", "País ✈️", "Descrição com emojis 😁😂", 30.0, 12, ["chiyo.jpeg"]))
