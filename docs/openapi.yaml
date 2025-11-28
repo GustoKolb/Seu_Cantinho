@@ -1,0 +1,453 @@
+openapi: 3.0.3
+
+info:
+  title: Sistema de Reservas - Backend API (Server)
+  version: 1.0.0
+  description: |
+    API de backend que gerencia Locais, Reservas e Usuários.
+    Todas as respostas são encapsuladas em um objeto padrão (ServerResponse)
+    para indicar sucesso (ok: true) ou falha.
+
+    Códigos de Saída do Servidor (`exit_code` mapeado para HTTP):
+      - 200/201 (0): Sucesso
+      - 400 (1): Erro de validação, parâmetro inválido, ID não encontrado (CRUD),
+                 ou conflito de regra de negócio (Datas/Login)
+      - 404 (-1): Endpoint inválido
+      - 500 (2): Erro interno (falha ao ler/gravar DB)
+
+servers:
+  - url: /
+    description: URL base do Servidor de Backend
+
+tags:
+  - name: Usuários
+    description: Gerenciamento de usuários e autenticação.
+  - name: Locais
+    description: Gerenciamento de locais disponíveis para locação.
+  - name: Reservas
+    description: Gerenciamento de reservas e verificação de conflito de datas.
+  - name: Imagens
+    description: Retorno de arquivos de imagem em Base64.
+
+paths:
+
+  # ===============================================
+  # ================ 1. USUÁRIOS ==================
+  # ===============================================
+
+  /login:
+    post:
+      tags: [Usuários]
+      summary: Autenticação de Usuário
+      description: Realiza o login. Se válido, retorna status de administrador.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginCredentials'
+      responses:
+        '200':
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponseBoolean'
+        '400':
+          description: Credenciais inválidas (exit_code 1)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /usuarios:
+    get:
+      tags: [Usuários]
+      summary: Lista ou Busca Usuários
+      parameters:
+        - name: byId
+          in: query
+          schema: { type: integer }
+        - name: byName
+          in: query
+          schema: { type: string }
+        - name: byPassword
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Lista de usuários (pode ser vazia)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponseArrayUser'
+
+    post:
+      tags: [Usuários]
+      summary: Cria um Novo Usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /usuarios/{id}:
+    patch:
+      tags: [Usuários]
+      summary: Atualiza Informações de um Usuário
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '200': { description: Usuário atualizado }
+        '400': { description: Usuário não encontrado (exit_code 1) }
+
+    delete:
+      tags: [Usuários]
+      summary: Deleta um Usuário
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Usuário deletado }
+        '400': { description: Usuário não encontrado (exit_code 1) }
+
+
+  # ===============================================
+  # ================== 2. LOCAIS ==================
+  # ===============================================
+
+  /locais:
+    get:
+      tags: [Locais]
+      summary: Lista e Filtra Locais
+      parameters:
+        - { name: byId,         in: query, schema: { type: integer } }
+        - { name: byName,       in: query, schema: { type: string } }
+        - { name: byCountry,    in: query, schema: { type: string } }
+        - { name: byPriceMin,   in: query, schema: { type: number, format: float } }
+        - { name: byCapacityMin,in: query, schema: { type: integer } }
+        - { name: byState,      in: query, schema: { type: string } }
+        - { name: byCity,       in: query, schema: { type: string } }
+        - { name: byDistrict,   in: query, schema: { type: string } }
+        - { name: byPriceMax,   in: query, schema: { type: number, format: float } }
+        - { name: byCapacityMax,in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: Lista de locais
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponseArrayPlace'
+
+    post:
+      tags: [Locais]
+      summary: Cria um Novo Local
+      description: Upload opcional de imagem principal via Base64.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceInput'
+      responses:
+        '201':
+          description: Local criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /locais/{id}:
+    patch:
+      tags: [Locais]
+      summary: Atualiza Informações de um Local
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceInput'
+      responses:
+        '200': { description: Local atualizado }
+        '400': { description: Local não encontrado (exit_code 1) }
+
+    delete:
+      tags: [Locais]
+      summary: Deleta um Local
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Local deletado }
+        '400': { description: Local não encontrado (exit_code 1) }
+
+
+  # ===============================================
+  # ================ 3. RESERVAS ==================
+  # ===============================================
+
+  /reservas:
+    get:
+      tags: [Reservas]
+      summary: Lista e Filtra Reservas
+      parameters:
+        - { name: byId,          in: query, schema: { type: integer } }
+        - { name: byClientName,  in: query, schema: { type: string } }
+        - { name: byPlaceId,     in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: Lista de reservas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponseArrayBooking'
+
+    post:
+      tags: [Reservas]
+      summary: Cria uma Nova Reserva
+      description: Valida conflito de data/local.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingInput'
+      responses:
+        '201':
+          description: Reserva criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '400':
+          description: Conflito de data ou parâmetro inválido (exit_code 1)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reservas/{id}:
+    patch:
+      tags: [Reservas]
+      summary: Atualiza uma Reserva
+      description: Valida conflitos com outras reservas.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingInput'
+      responses:
+        '200': { description: Reserva atualizada }
+        '400': { description: Reserva não encontrada ou conflito de data (exit_code 1) }
+
+    delete:
+      tags: [Reservas]
+      summary: Deleta uma Reserva
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Reserva deletada }
+        '400': { description: Reserva não encontrada (exit_code 1) }
+
+
+  # ===============================================
+  # ================ 4. IMAGENS ===================
+  # ===============================================
+
+  /images/{filename}:
+    get:
+      tags: [Imagens]
+      summary: Retorna Imagem em Base64
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Imagem codificada em Base64
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponseBase64'
+        '400':
+          description: Arquivo não encontrado (exit_code -1)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+
+# ===============================================
+# ================ COMPONENTES ==================
+# ===============================================
+
+components:
+  schemas:
+
+    # ---------------- Respostas Genéricas ----------------
+
+    ServerResponse:
+      type: object
+      properties:
+        ok:  { type: boolean }
+        msg: { type: string }
+        data: { nullable: true }
+
+    ServerResponseArrayUser:
+      allOf:
+        - $ref: '#/components/schemas/ServerResponse'
+        - properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+
+    ServerResponseArrayPlace:
+      allOf:
+        - $ref: '#/components/schemas/ServerResponse'
+        - properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Place'
+
+    ServerResponseArrayBooking:
+      allOf:
+        - $ref: '#/components/schemas/ServerResponse'
+        - properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Booking'
+
+    ServerResponseBase64:
+      allOf:
+        - $ref: '#/components/schemas/ServerResponse'
+        - properties:
+            data: { type: string }
+
+    ServerResponseBoolean:
+      allOf:
+        - $ref: '#/components/schemas/ServerResponse'
+        - properties:
+            data: { type: boolean }
+
+
+    # ---------------- ENTIDADES ----------------
+
+    LoginCredentials:
+      type: object
+      required: [user, password]
+      properties:
+        user:     { type: string }
+        password: { type: string }
+
+    User:
+      type: object
+      required: [id, name, filial_id, isAdmin]
+      properties:
+        id:        { type: integer }
+        name:      { type: string }
+        filial_id: { type: integer }
+        isAdmin:   { type: boolean }
+
+    UserInput:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - properties:
+            password: { type: string }
+        - required: [name, password, filial_id, isAdmin]
+
+    Place:
+      type: object
+      required:
+        [id, name, country, state, city, district, street, number,
+         description, capacity, price, images]
+      properties:
+        id:         { type: integer }
+        name:       { type: string }
+        country:    { type: string }
+        state:      { type: string }
+        city:       { type: string }
+        district:   { type: string }
+        street:     { type: string }
+        number:     { type: string }
+        description:{ type: string }
+        capacity:   { type: integer }
+        price:      { type: number, format: float }
+        images:
+          type: array
+          items: { type: string }
+
+    PlaceInput:
+      allOf:
+        - $ref: '#/components/schemas/Place'
+        - properties:
+            image_b64: { type: string }
+        - required:
+            [name, country, state, city, district, street,
+             number, description, capacity, price]
+
+    Booking:
+      type: object
+      required:
+        [id, client_name, client_email, client_phone,
+         amount_paid, total_amount, place,
+         start_date, end_date]
+      properties:
+        id:            { type: integer }
+        client_name:   { type: string }
+        client_email:  { type: string }
+        client_phone:  { type: string }
+        amount_paid:   { type: number, format: float }
+        total_amount:  { type: number, format: float }
+        place:         { $ref: '#/components/schemas/Place' }
+        start_date:    { type: string, format: date }
+        end_date:      { type: string, format: date }
+
+    BookingInput:
+      allOf:
+        - $ref: '#/components/schemas/Booking'
+        - properties:
+            place_id: { type: integer }
+        - required:
+            [client_name, client_email, client_phone,
+             amount_paid, total_amount, place_id,
+             start_date, end_date]
+
