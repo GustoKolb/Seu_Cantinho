@@ -21,7 +21,7 @@
     <script src="config.js"></script>
     <script>
         const BROKER_URL = window.CONFIG.BROKER_URL;
-        const ENDPOINT_USUARIOS = window.CONFIG.ENDPOINT_USUARIOS;
+        const ENDPOINT_LOGIN = window.CONFIG.ENDPOINT_LOGIN;
         document.getElementById('user').value = ""
         localStorage.removeItem('userIsAdmin');//garante armazenamento limpo
         document.getElementById('password').addEventListener("keydown", e => {if (e.key === 'Enter') loginUser();})
@@ -32,19 +32,19 @@
 
             const user = document.getElementById('user').value;
             const password = document.getElementById('password').value;
+            
+            //envia login pro servidor, retorna null se nao houver usuario correspondente, true se for um adm e false caso contrario
+            const url = `${BROKER_URL}/${ENDPOINT_LOGIN}`
+            const data = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'},
+                                            body: JSON.stringify({user: user, password: password})})
+                                    .then(r => r.ok && r.json()).then(j => j.data).catch(() => false);
 
-            //GET url pra validar se (user, password) correspondem a alguem no BD
-            const url = `${BROKER_URL}/${ENDPOINT_USUARIOS}?byName=${user}&byPassword=${password}`
-
-            const data = await fetch(url, {method: 'GET', headers: {'Content-Type': 'application/json'}})
-                                .then(r => r.ok && r.json()).then(j => j.data).catch(() => false);
-
-            if (!data.length){//sem login valido
+            if (data === null || data === undefined){//sem login valido
                 msg.innerText = "Usuário e/ou Senha Incorretos";
                 return;
             }
 
-            localStorage.setItem('userIsAdmin', data[0].isAdmin);
+            localStorage.setItem('userIsAdmin', data);
             window.location.href = "menu.html"
         }
     </script>

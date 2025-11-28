@@ -1,10 +1,12 @@
 x-endpoints-client: &endpoints_client
+  ENDPOINT_LOGIN: "login"
   ENDPOINT_LOCAIS: "locais"
   ENDPOINT_USUARIOS: "usuarios"
   ENDPOINT_IMAGENS: "imagens"
   ENDPOINT_RESERVAS: "reservas"
 
 x-endpoints-server: &endpoints_server
+  ENDPOINT_LOGIN: "login"
   ENDPOINT_USERS: "users"
   ENDPOINT_IMAGES: "images"
   ENDPOINT_BOOKINGS: "bookings"

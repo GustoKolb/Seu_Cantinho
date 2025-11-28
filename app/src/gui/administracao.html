@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administração - Seu Cantinho</title>
+    <title>Seu Cantinho - Administração</title>
+
+    <!-- estilizacao da tabela-->
     <style>
         body {
             margin: 0;
@@ -26,7 +28,6 @@
             cursor: pointer;
             font-size: 1rem;
             border-radius: 5px 5px 0 0;
-            transition: background-color 0.3s;
         }
         .tab-btn:hover {
             background-color: #ddd;
@@ -34,13 +35,14 @@
         .tab-btn.active {
             background-color: #fff;
             border: 1px solid #ccc;
-            border-bottom: 1px solid #fff; /* Esconde a linha inferior */
+            border-bottom: 1px solid #fff;
             font-weight: bold;
         }
         #data-container {
             background-color: white;
             padding: 20px;
-            border-radius: 5px;
+            overflow-x: auto;
+            border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         table {
@@ -52,13 +54,21 @@
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
+            word-wrap: break-word; 
+            overflow-wrap: break-word;
         }
         th {
             background-color: #f2f2f2;
         }
+
         .action-btn {
-            padding: 5px 10px;
-            margin: 0 2px;
+            display: inline-block;
+            margin: 5px;
+            margin-left:0;     
+            
+            justify-content: center;
+
+            padding: 8px;
             cursor: pointer;
             border: none;
             border-radius: 3px;
@@ -75,15 +85,10 @@
             border-radius: 5px;
             cursor: pointer;
         }
-
-        td:last-child {
-            display: flex;
-            gap: 5px;
-        }
-        
     </style>
+
+    <!-- estilizacao do modal-->
     <style>
-        /* Estilos do Modal */
         .modal { 
             display: none; 
             position: fixed; 
@@ -226,20 +231,19 @@
 
     <script src="config.js"></script>
     <script src="topBar.js"></script>
-    <script src="admin_handlers.js"></script><script>
+    <!--handlers de POST/PATCH/DELETE separados-->
+    <script src="admin_handlers.js"></script>
+    <script>
         let currentEntity = 'usuarios';
         const config = window.CONFIG;
         const modal = document.getElementById('crud-modal');
-        const crudForm = document.getElementById('crud-form'); // Precisa existir no HTML!
+        const crudForm = document.getElementById('crud-form');
 
-        // Mapeamento de Funções do Arquivo Auxiliar (para uso interno)
         const entityMapLocal = {
             'usuarios': { getFormHTML: getUsuariosFormHTML, submit: submitUsuariosForm },
             'locais': { getFormHTML: getLocaisFormHTML, submit: submitLocaisForm },
             'reservas': { getFormHTML: getReservasFormHTML, submit: submitReservasForm },
         };
-        
-        // --- FUNÇÕES DE UTENSÍLIO E CONTROLE (EXISTENTES NO SEU CÓDIGO) ---
 
         function getEntityClass(e){
             switch (e){
@@ -264,18 +268,16 @@
             });
         }
         
-        // Função para abrir o Modal (POST/Criação ou PATCH/Edição)
         window.openModal = function(entity, id = null, itemData = null) {
-            const data = id && itemData ? JSON.parse(itemData.replace(/&quot;/g, '"')) : {};
+            const data = (id!==null) && itemData ? JSON.parse(itemData.replace(/&quot;/g, '"')) : {};
             
             currentEntity = entity;
-            const isEdit = !!id;
-            const formHTML = entityMapLocal[entity].getFormHTML(data); // Chama a função do arquivo externo
-            
-            document.getElementById('modal-title').innerText = `${isEdit ? 'Editar' : 'Criar Novo'} ${getEntityClass(entity)}`;
+            const isEdit = id!==null;
+            const formHTML = entityMapLocal[entity].getFormHTML(data);
+
+            document.getElementById('modal-title').innerText = `${isEdit ? 'Editar' : 'Criar'} ${getEntityClass(entity)}`;
             document.getElementById('form-content').innerHTML = formHTML;
             
-            // Lógica de Preview de Imagem (do arquivo anterior, mantida aqui por simplicidade)
             if (entity === 'locais') {
                 const imgInput = document.getElementById('image_upload');
                 if (imgInput) {
@@ -292,8 +294,6 @@
             }
             modal.style.display = 'flex';
         };
-
-        // --- FUNÇÃO DE CARREGAMENTO (AJUSTADA PARA USAR O NOVO FLUXO DE BOTÕES) ---
 
         async function loadEntity(entity){
             const container = document.getElementById('table-view');
@@ -327,23 +327,47 @@
             }
         }
 
-        // --- FUNÇÃO DE RENDERIZAÇÃO DA TABELA (AJUSTADA PARA CHAMAR OPEN MODAL E HANDLERS) ---
+        //mapeamento de exibicao dos headers da tabela
+        function key2Header(key){
+            switch (key) {
+                case 'id': case 'booking_id': return 'ID';
+                case 'name':                  return 'Nome';
+                case 'password':                return 'Senha';
+                case 'description':           return 'Descrição';
+                case 'filial_id':             return 'Filial';
+                case 'isAdmin':               return 'É Administrador';
+                case 'street':                return 'Rua';
+                case 'number':                return 'Número';
+                case 'district':              return 'Bairro';
+                case 'city':                  return 'Cidade';
+                case 'state':                 return 'Estado';
+                case 'country':               return 'País';
+                case 'price':                 return 'Preço';
+                case 'capacity':              return 'Capacidade';
+                case 'images':                return 'Imagens';
+                case 'is_active':             return 'Ativo';
+                case 'client_name':           return 'Cliente';
+                case 'client_email':          return 'Email';
+                case 'client_phone':          return 'Telefone';
+                case 'place':                 return 'Local';
+                case 'total_amount':          return 'Valor Total';
+                case 'amount_paid':           return 'Valor Pago';
+                case 'start_date':            return 'Data Início';
+                case 'end_date':              return 'Data Fim';
+                default: return key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+            }
+        }
 
         function renderTable(data, entity) {
             const container = document.getElementById('table-view');
             container.innerHTML = '';
 
             if (data.length === 0) return;
-
-            const excludedKeys = ['images', 'password', 'description', 'client_email', 'client_phone', 'amount_paid'];
-            const idKey = entity === 'reservas' ? 'booking_id' : 'id'; // Chave primária
             
-            const headers = Object.keys(data[0]).filter(key => !excludedKeys.includes(key));            
+            const headers = Object.keys(data[0])      
             
             let html = '<table><thead><tr>';
-            headers.forEach(key => {
-                html += `<th>${key.charAt(0).toUpperCase() + key.slice(1)}</th>`;
-            });
+            headers.forEach(key => {html += `<th>${key2Header(key)}</th>`;});
             html += '<th>Ações</th></tr></thead><tbody>';
 
             data.forEach(item => {
@@ -352,18 +376,21 @@
                 html += '<tr>';
                 headers.forEach(key => {
                     let value = item[key];
-                    if (key === 'place') {
-                         value = item.place ? `ID: ${item.place.id}` : 'N/A';
-                    } else if (Array.isArray(value)) {
-                         value = value.length > 0 ? `${value.length} itens` : 'Nenhum';
-                    }
+                    if (key === 'place')
+                        value = item.place ? `ID: ${item.place.id}` : 'N/A';
+
+                    if (Array.isArray(value))
+                        value = `${value.length} itens`;
+                    
+                    if (value === true) value = 'Sim'
+                    if (value === false) value = 'Não'
+
                     html += `<td>${value}</td>`;
                 });
-                
                 html += `
                     <td>
-                        <button class="action-btn edit-btn" onclick="openModal('${entity}', ${item[idKey]}, '${itemJSON}')">Editar</button>
-                        <button class="action-btn delete-btn" onclick="handleDelete('${entity}', ${item[idKey]}).then(success => success && loadEntity(entity))">Excluir</button>
+                        <button class="action-btn edit-btn" onclick="openModal('${entity}', ${item['id']}, '${itemJSON}')">Editar</button>
+                        <button class="action-btn delete-btn" onclick="handleDelete('${entity}', ${item['id']}).then(success => success && loadEntity(currentEntity))">Excluir</button>
                     </td>
                 `;
                 html += '</tr>';
@@ -373,8 +400,6 @@
             container.innerHTML = html;
         }
 
-        // --- INICIALIZAÇÃO COM LISTENERS (AJUSTADOS) ---
-
         document.addEventListener("DOMContentLoaded", () => {
             loadEntity(currentEntity);
             setupTabs();
@@ -382,21 +407,19 @@
             const add_btn = document.getElementById('add-new-btn');
             add_btn.innerText = 'Adicionar ' + getEntityClass(currentEntity);
 
-            // Botão Adicionar: Abre o Modal para Criação
             add_btn.onclick = () => {
                 window.openModal(currentEntity);
             };
 
-            // Listener de Submissão do Formulário (POST ou PATCH)
             crudForm.onsubmit = async (e) => {
                 e.preventDefault();
-                const submitter = entityMapLocal[currentEntity].submit; // Chama a função do arquivo externo
+                const submitter = entityMapLocal[currentEntity].submit;
                 
                 if (submitter) {
                     const success = await submitter(currentEntity, crudForm);
                     if (success) {
                         modal.style.display = 'none';
-                        loadEntity(currentEntity); // Recarrega a tabela
+                        loadEntity(currentEntity); // recarregar a tabela
                     }
                 }
             };

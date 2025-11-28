@@ -1,32 +1,39 @@
 from db.utils import normalizeString
+import base64
 
 places = []   # lista de todos os locais
 place_counter = 0
 
 class Place:
     def __init__(self, name, street, number, district, city, state, country,
-                                         description, price, capacity, images):
+                                         description, price, capacity, image_b64=None, images=None):
         global place_counter
         self.id = place_counter
         place_counter += 1
 
         self.name = name
+        self.country = country
+        self.state = state
+        self.city = city
+        self.district = district
         self.street = street
         self.number = number
-        self.district = district
-        self.city = city
-        self.state = state
-        self.country = country
         self.description = description
-        self.price = price
         self.capacity = capacity
+        self.price = price
         self.images = images
+        if image_b64 is not None:
+            self.setImage(image_b64)
 
-    def __str__(self):
-        return f"{self.id}: {self.name} - {self.location}"
-
-    def __repr__(self):
-        return self.__str__()
+    def setImage(self, b64_str):
+        filepath = str(self.id)+'.jpg'
+        self.images = [filepath]
+        if ',' in b64_str:
+            encoded_data = b64_str.split(',', 1)[-1]
+        else:
+            encoded_data = b64_str
+        with open('db/images/'+filepath, '+wb') as f:
+            f.write(base64.b64decode(encoded_data))
 
 #cria um local disponivel para locacao
 def create_place(**kwargs):
@@ -71,26 +78,88 @@ def read_place(**f):
     return results
 
 def update_place(**kwargs):
-    p = read_place(byId=kwargs['place_id'])
+    p = read_place(byId=kwargs['id'])
     if not p:
         return 1
+
+    kwargs.pop('id')
     for k, v in kwargs.items():
+        if k == 'image_b64':
+            p.setImage(v)
         if hasattr(p, k):
             setattr(p, k, v)
     return 0
 
 def delete_place(**kwargs):
-    p = read_place(byId=kwargs['place_id'])
+    p = read_place(byId=kwargs['id'])
     if not p:
         return 1
     places.remove(p)
     return 0
 
-#cria uns locais para teste
-places.append(Place("Local Normal", "Rua A", "123", "Bairro B", "Cidade C", "Estado D", "País E", "Descrição normal", 50.0, 10, ["chiyo.jpeg"]))
 
-places.append(Place("Extremamente Longo " * 10, "Rua X", "9999", "Bairro Y", "Cidade Z", "Estado W", "País V", "Descrição muito longa" * 20, 999999.99, 1000, ["chiyo.jpeg", "bagre.jpeg"]))
+#carrega locais de exemplo
+# Dados dos locais (Places) inseridos diretamente no código
 
-places.append(Place("Caracteres Especiais !@#$%^&*()", "Rúa ñ", "001", "Bairro *&^%", "Cítý Ç", "Estãdo", "Páis", "Descrição com símbolos ♥♦♣♠", 25.5, 5, ["bagre.jpeg"]))
+places.append(
+    Place(
+        name="Deck da Piscina",
+        country="Brasil",
+        state="SC",
+        city="Florianópolis",
+        district="Jurerê",
+        street="Alameda dos Mares",
+        number="50",
+        description="Área externa com deck e piscina infinita.",
+        capacity=80,
+        price=3200.00,
+        images=['0.jpg'],
+    )
+)
 
-places.append(Place("Unicode 👍", "Rua Emoji", "4", "Bairro 😎", "Cidade 🏙️", "Estado 🌍", "País ✈️", "Descrição com emojis 😁😂", 30.0, 12, ["chiyo.jpeg"]))
+places.append(
+    Place(
+        name="Estúdio Urbano",
+        country="Brasil",
+        state="PR",
+        city="Curitiba",
+        district="Batel",
+        street="Rua Visconde de Guarapuava",
+        number="4550",
+        description="Loft moderno para ensaios fotográficos e pequenas reuniões.",
+        capacity=30,
+        price=1200.00,
+        images=['1.jpg'],
+    )
+)
+
+places.append(
+    Place(
+        name="Auditório Principal",
+        country="Brasil",
+        state="DF",
+        city="Brasília",
+        district="Asa Sul",
+        street="Eixo Monumental",
+        number="100",
+        description="Auditório com poltronas confortáveis e excelente acústica.",
+        capacity=500,
+        price=9000.00,
+        images=['2.jpg'],
+    )
+)
+
+places.append(
+    Place(
+        name="Sala de Reuniões",
+        country="Brasil",
+        state="GO",
+        city="Goiânia",
+        district="Setor Marista",
+        street="Avenida do Contorno",
+        number="120",
+        description="Sala profissional com projetor e Wi-Fi de alta velocidade.",
+        capacity=15,
+        price=600.00,
+        images=['3.jpg'],
+    ))

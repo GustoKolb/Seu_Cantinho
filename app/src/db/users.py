@@ -6,18 +6,12 @@ user_counter = 0
 class User:
     def __init__(self, name, password, filial_id, isAdmin):
         global user_counter
+        self.id = user_counter
+        user_counter+=1
         self.name = name
         self.password = password
         self.filial_id = filial_id
         self.isAdmin = isAdmin
-        self.id = user_counter
-        user_counter+=1
-
-    def __str__(self):
-        return f"{self.id}/{self.filial_id}: {self.name} ({'Admin' if self.isAdmin else 'User'})"
-
-    def __repr__(self):
-        return self.__str__()
 
 #cria um usuario com nome, senha e se eh administrador ou nao
 def create_user(**kwargs):
@@ -48,9 +42,11 @@ def read_user(**f):
 
 #atualiza informacoes de um usuario
 def update_user(**kwargs):
-    user = read_user(byId=kwargs['user_id'])
+    user = read_user(byId=kwargs['id'])
     if not user:
         return 1
+
+    kwargs.pop('id')
     for k, v in kwargs.items():
         if hasattr(user, k):
             setattr(user, k, v)
@@ -58,7 +54,7 @@ def update_user(**kwargs):
 
 #deleta um usuario
 def delete_user(**kwargs):
-    user = read_user(byId=kwargs['user_id'])
+    user = read_user(byId=kwargs['id'])
     if not user:
         return 1
     users.remove(user)

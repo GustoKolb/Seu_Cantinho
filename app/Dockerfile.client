@@ -5,7 +5,7 @@ RUN pip install -r requirements.txt
 COPY src/client.py .
 COPY src/gui ./gui
 
-#criar endpoints pro javascript dinamicamente
-COPY set_js_endpoints.sh .
-RUN chmod +x set_js_endpoints.sh
-CMD ["./set_js_endpoints.sh"]
+#criar endpoints pro javascript dinamicamente com base nas variaveis setadas no docker
+COPY set_endpoints.sh .
+RUN chmod +x set_endpoints.sh
+CMD ["./set_endpoints.sh"]

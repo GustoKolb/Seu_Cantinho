@@ -25,6 +25,7 @@ URL_MAP = {
     os.getenv("ENDPOINT_LOCAIS")   : os.getenv("ENDPOINT_PLACES"),
     os.getenv("ENDPOINT_USUARIOS") : os.getenv("ENDPOINT_USERS"),
     os.getenv("ENDPOINT_IMAGENS")  : os.getenv("ENDPOINT_IMAGES"),
+    os.getenv("ENDPOINT_LOGIN")    : os.getenv("ENDPOINT_LOGIN"),
 }
 
 class Event:
@@ -36,24 +37,21 @@ class Event:
         self.target = f"{API_URL}/{URL_MAP[prefix]}/{suffix}"
         self.method = request.method
         self.data = data
-        self.status = "Erro Genérico"
-        self.msg = "Erro Genérico Não Tratado"
+        self.response = {"ok":False, 'msg':'New Event', 'data':None}
         self.done = asyncio.Event()
 
 #metodo generico pra organizar todos os eventos recebidos
 @app.api_route("/{target:path}", methods=["GET", "POST", "PATCH", "DELETE"])
 async def newEvent(target, request:Request):
-    data = None if request.method == "GET" else await request.json()
+    data = None
+    if request.method == "POST" or request.method == 'PATCH':
+        data = await request.json()
     
     #adiciona novo evento a fila
     event = Event(target, request, data)
     await queue.put(event)
-
-    #espera evento ser processado
     await event.done.wait()
-
-    #retorna status
-    return {"status": event.status, "msg": event.msg, "data": event.data}
+    return event.response
 
 #processa os eventos da fila enviando para API(s) de processamento
 async def process_events():
@@ -61,29 +59,16 @@ async def process_events():
         event = await queue.get()
         r = {}
         try:
-            match event.method:
-                case "GET":
-                    r = requests.get(event.target).json()
-                    event.data = r.get("data")
-                case "POST":
-                    r = requests.post(event.target, json=event.data).json()
-                    print(r)
-                case "PATCH":
-                    r = requests.patch(event.target, json=event.data).json()
-                case "DELETE":
-                    r = requests.delete(event.target, json=event.data).json()
-                case _:
-                    r = {'status':'error', 'msg':'Request Must Be "POST/GET/PUT/DELETE"'}
-                    event.data = None
+            request = getattr(requests, event.method.lower())
+            if event.method ==  "GET":
+                r = request(event.target).json()
+            else:
+                r = request(event.target, json=event.data).json()
         except:
-            r = {'status':'error', 'msg':'JSON Parse Error'}
-            event.data = None
+            r = {'ok':False, 'msg':'JSON Parse Error', 'data':None}
 
-        event.status = r['status']
-        event.msg = r['msg']
-
+        event.response = r
         event.done.set()
         queue.task_done()
 
-loop = asyncio.get_event_loop()
-loop.create_task(process_events())
+asyncio.create_task(process_events())

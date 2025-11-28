@@ -1,30 +1,22 @@
-// --- admin-handlers-forms.js ---
-
-// As seguintes variáveis e funções de utilidade serão usadas pelas funções de CRUD.
-
-/**
- * @param {string} e - Nome da entidade (ex: 'usuarios')
- * @returns {string} - Nome da classe em português (ex: 'Usuário')
- */
+// pra melhor exibicao na interface
 function getEntityClass(e){
     switch (e){
         case 'usuarios': return 'Usuário';
         case 'reservas': return 'Reserva';
         case 'locais': return 'Local';
-        default: return 'Indefinido';
+        default: return 'Entidade Indefinida';
     }
 }
 
-// Mapeamento de Funções de Formulário e Submissão
+// facilitar acesso por mapeamento generico
 const entityMap = {
     'usuarios': { getFormHTML: getUsuariosFormHTML, submit: submitUsuariosForm },
-    'locais': { getFormHTML: getLocaisFormHTML, submit: submitLocaisForm },
+    'locais'  : { getFormHTML: getLocaisFormHTML,   submit: submitLocaisForm },
     'reservas': { getFormHTML: getReservasFormHTML, submit: submitReservasForm },
 };
 
-// --- FUNÇÕES DE LÓGICA CRUD ---
+//handle DELETE
 
-// DELETE: Handler de exclusão (window.handleDelete precisa ser definida no HTML para funcionar)
 window.handleDelete = async function(entity, id) {
     const config = window.CONFIG;
     if (!config) {
@@ -44,8 +36,7 @@ window.handleDelete = async function(entity, id) {
         const response = await fetch(url, { method: 'DELETE' });
 
         if (response.ok) {
-            alert(`${getEntityClass(entity)} deletado com sucesso!`);
-            // Nota: Quem chamar handleDelete (no HTML) deve chamar loadEntity(entity)
+            alert(`Deletar ${getEntityClass(entity)}: Sucesso!`);
             return true;
         } else {
             const error = await response.json().catch(() => ({ message: response.statusText }));
@@ -58,57 +49,57 @@ window.handleDelete = async function(entity, id) {
     }
 }
 
-// POST/PATCH: Handler de Criação/Edição
+// POST e PATCH
+
 async function handleDataSubmit(entity, id, data, method = 'POST') {
     const config = window.CONFIG;
     const endpointKey = 'ENDPOINT_' + entity.toUpperCase();
     const endpoint = config[endpointKey];
-    const action = method === 'POST' ? 'Criar' : 'Editar';
-
-    const url = id ? `${config.BROKER_URL}/${endpoint}/${id}` : `${config.BROKER_URL}/${endpoint}`;
+    const action = method === 'POST' ? 'Criar' : 'Editar';    
+    const url = method === 'PATCH' ? `${config.BROKER_URL}/${endpoint}/${id}` : `${config.BROKER_URL}/${endpoint}`;
     
     let bodyData;
     let headers = {};
-
+1
     if (data instanceof FormData) {
         bodyData = data;
     } else {
         bodyData = JSON.stringify(data);
         headers['Content-Type'] = 'application/json';
     }
-
     try {
         const response = await fetch(url, {
             method: method,
             headers: headers,
             body: bodyData,
-        });
+        }).then(j=>j.json());
 
-        if (response.ok) {
-            alert(`${getEntityClass(entity)} ${action} com sucesso!`);
-            return true;
-        } else {
-            let error = await response.json().catch(() => ({ message: response.statusText }));
-            alert(`Erro ao ${action.toLowerCase()}: ${error.message || response.statusText}`);
+        if (!response.ok){
+            alert(`Erro ao ${action.toLowerCase()}: Período Já Reservado`);
             return false;
         }
+        
+        alert(`${action} ${getEntityClass(entity)}: Sucesso!`);
+        return true;
+
     } catch (error) {
-        alert(`Erro de comunicação com o servidor ao ${action.toLowerCase()}.`);
+        alert(`Erro de comunicação com o servidor ao ${action}.`);
         return false;
     }
 }
 
+///////////////// get forms
 
-// --- FUNÇÕES DE FORMULÁRIO (RENDERIZAÇÃO HTML) ---
-        
 function getUsuariosFormHTML(item = {}) {
+    const isEditing = item.id != null && Number.isInteger(Number(item.id)) && Number(item.id) >= 0;
+
     return `
-        <input type="hidden" name="id" value="${item.id || ''}">
-        <div class="form-group"><label for="name">Nome:</label><input type="text" id="name" name="name" value="${item.name || ''}" required></div>
-        <div class="form-group"><label for="password">Senha:</label><input type="password" id="password" name="password" value="" placeholder="${item.id ? 'Deixe vazio para manter a senha atual' : ''}" ${item.id ? '' : 'required'}></div>
-        <div class="form-group"><label for="filial_id">ID da Filial:</label><input type="number" id="filial_id" name="filial_id" value="${item.filial_id || ''}" required min="1"></div>
+        <input type="hidden" name="id" value="${item.id != null ? item.id : ''}">
+        <div class="form-group"><label for="name">Nome</label><input type="text" id="name" name="name" value="${item.name || ''}" required></div>
+        <div class="form-group"><label for="password">Senha</label><input type="text" id="password" name="password" value="${isEditing ? item.password:''}" 'required'></div>
+        <div class="form-group"><label for="filial_id">ID da Filial</label><input type="number" id="filial_id" name="filial_id" value="${item.filial_id != null ? item.filial_id : ''}" required min="0"></div>
         <div class="form-group">
-            <label for="isAdmin">Admin:</label>
+            <label for="isAdmin">É Administrador?</label>
             <select id="isAdmin" name="isAdmin" required>
                 <option value="false" ${item.isAdmin === false || item.isAdmin === 'false' ? 'selected' : ''}>Não</option>
                 <option value="true" ${item.isAdmin === true || item.isAdmin === 'true' ? 'selected' : ''}>Sim</option>
@@ -117,10 +108,9 @@ function getUsuariosFormHTML(item = {}) {
     `;
 }
 
-function getLocaisFormHTML(item = {}) {
-    const isEdit = !!item.id;
+function getLocaisFormHTML(item = {}){
     return `
-        <input type="hidden" name="id" value="${item.id || ''}">
+        <input type="hidden" name="id" value="${item.id != null ? item.id : ''}">
         <div class="form-group"><label for="name">Nome:</label><input type="text" id="name" name="name" value="${item.name || ''}" required></div>
         <div class="form-group"><label for="street">Endereço:</label><input type="text" id="street" name="street" value="${item.street || ''}" required></div>
         <div class="form-group"><label for="number">Número:</label><input type="text" id="number" name="number" value="${item.number || ''}" required></div>
@@ -132,69 +122,98 @@ function getLocaisFormHTML(item = {}) {
         <div class="form-group"><label for="price">Preço:</label><input type="number" id="price" name="price" value="${item.price || ''}" required min="0" step="0.01"></div>
         <div class="form-group"><label for="capacity">Capacidade:</label><input type="number" id="capacity" name="capacity" value="${item.capacity || ''}" required min="1"></div>
         <div class="form-group">
-            <label for="image_upload">Nova Imagem (POST/Criação):</label>
-            <input type="file" id="image_upload" name="image_upload" accept="image/*" ${isEdit ? 'disabled' : ''}>
-            ${isEdit ? `<p style="font-size:0.9em; color:#999;">A edição de imagem é feita via endpoint específico.</p>` : ''}
+            <label for="image_upload">Imagem</label>
+            <input type="file" id="image_upload" name="image_upload" accept="image/*">
             <div id="image-preview-container"></div>
         </div>
     `;
 }
-        
-function getReservasFormHTML(item = {}) {
-    const formatDate = (dateString) => dateString ? dateString.split('T')[0] : '';
+
+function getReservasFormHTML(item = {}){
+    const toYMD = (dmy) => dmy.split('-').reverse().join('-'); //converte dmy pra ymd
+    const placeIdValue = item.place ? (item.place.id != null ? item.place.id : '') : '';
+
     return `
-        <input type="hidden" name="id" value="${item.booking_id || ''}">
+        <input type="hidden" name="id" value="${item.id != null ? item.id : ''}">
         <div class="form-group"><label for="client_name">Nome do Cliente:</label><input type="text" id="client_name" name="client_name" value="${item.client_name || ''}" required></div>
         <div class="form-group"><label for="client_email">Email:</label><input type="email" id="client_email" name="client_email" value="${item.client_email || ''}" required></div>
         <div class="form-group"><label for="client_phone">Telefone:</label><input type="text" id="client_phone" name="client_phone" value="${item.client_phone || ''}" required></div>
-        <div class="form-group"><label for="place_id">ID do Local:</label><input type="number" id="place_id" name="place_id" value="${item.place ? item.place.id : ''}" required min="1"></div>
+        <div class="form-group"><label for="place_id">ID do Local:</label><input type="number" id="place_id" name="place_id" value="${placeIdValue}" required min="0"></div>
         <div class="form-group"><label for="total_amount">Valor Total:</label><input type="number" id="total_amount" name="total_amount" value="${item.total_amount || ''}" required min="0" step="0.01"></div>
         <div class="form-group"><label for="amount_paid">Valor Pago:</label><input type="number" id="amount_paid" name="amount_paid" value="${item.amount_paid || ''}" required min="0" step="0.01"></div>
-        <div class="form-group"><label for="start_date">Data Início:</label><input type="date" id="start_date" name="start_date" value="${formatDate(item.start_date)}" required></div>
-        <div class="form-group"><label for="end_date">Data Fim:</label><input type="date" id="end_date" name="end_date" value="${formatDate(item.end_date)}" required></div>
+        <div class="form-group"><label for="start_date">Data de Início:</label><input type="date" id="start_date" name="start_date" value="${toYMD(item.start_date)}" required></div>
+        <div class="form-group"><label for="end_date">Data de Término:</label><input type="date" id="end_date" name="end_date" value="${toYMD(item.end_date)}" required></div>
     `;
 }
 
-// --- FUNÇÕES DE SUBMISSÃO (POST/PATCH) ---
+////////////////// submit forms
 
-async function submitUsuariosForm(entity, form) {
-    const id = form.id.value;
-    const method = id ? 'PATCH' : 'POST';
+async function submitUsuariosForm(entity, form){
+    const rawId = form.id.value;
+    const id = rawId !== '' ? parseInt(rawId) : null;
+    const isEditing = Number.isInteger(id) && id >= 0;
+    const method = isEditing ? 'PATCH' : 'POST';
+    
     const data = {
         name: form.name.value,
-        filial_id: parseInt(form.filial_id.value),
+        filial_id: parseInt(form.filial_id.value), 
         isAdmin: form.isAdmin.value === 'true',
     };
+    
     if (form.password.value) { data.password = form.password.value; }
     return handleDataSubmit(entity, id, data, method);
 }
 
+function file2b64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
 async function submitLocaisForm(entity, form) {
-    const id = form.id.value;
-    const method = id ? 'PATCH' : 'POST';
+    const rawId = form.id.value;
+    const id = rawId !== '' ? parseInt(rawId) : null;
+    
+    const isEditing = Number.isInteger(id) && id >= 0;
+    const method = isEditing ? 'PATCH' : 'POST';
+    
     const data = {
         name: form.name.value, street: form.street.value, number: form.number.value, district: form.district.value, 
         city: form.city.value, state: form.state.value, country: form.country.value, description: form.description.value, 
         price: parseFloat(form.price.value), capacity: parseInt(form.capacity.value)
     };
 
-    if (method === 'POST' && form.image_upload.files.length > 0) {
-        const formData = new FormData();
-        formData.append('data', JSON.stringify(data)); 
-        formData.append('image', form.image_upload.files[0]);
-        return handleDataSubmit(entity, id, formData, method);
-    }
+    if (form.image_upload.files.length > 0)
+        data.image_b64 = await file2b64(form.image_upload.files[0]);
+
     return handleDataSubmit(entity, id, data, method);
 }
 
-async function submitReservasForm(entity, form) {
-    const id = form.id.value;
-    const method = id ? 'PATCH' : 'POST';
+async function submitReservasForm(entity, form){
+    const rawId = form.id.value;
+    const id = rawId !== '' ? parseInt(rawId) : null;
+    const isEditing = Number.isInteger(id) && id >= 0;
+    const method = isEditing ? 'PATCH' : 'POST';
+    const toDMY = (ydm) => ydm.split('-').reverse().join('-');
+
+    if (new Date(form.start_date.value) > new Date(form.end_date.value)){
+        alert("Erro: Data de Início Maior que Término")
+        return false;
+    }
+
     const data = {
-        client_name: form.client_name.value, client_email: form.client_email.value, client_phone: form.client_phone.value,
-        amount_paid: parseFloat(form.amount_paid.value), total_amount: parseFloat(form.total_amount.value),
-        place: parseInt(form.place_id.value), 
-        start_date: form.start_date.value, end_date: form.end_date.value,
+        client_name: form.client_name.value,
+        client_email: form.client_email.value,
+        client_phone: form.client_phone.value,
+        amount_paid: parseFloat(form.amount_paid.value),
+        total_amount: parseFloat(form.total_amount.value),
+        place_id: parseInt(form.place_id.value), 
+        start_date: toDMY(form.start_date.value),
+        end_date: toDMY(form.end_date.value),
     };
+
     return handleDataSubmit(entity, id, data, method);
 }

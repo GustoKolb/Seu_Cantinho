@@ -205,8 +205,6 @@
         document.getElementById("img-principal").src = el.src;
     }
 
-
-///////////////////////////////////////////////////////////////////////
     const inputStart = document.getElementById('start_date');
     const inputEnd   = document.getElementById('end_date');
 
@@ -235,7 +233,6 @@
 
         document.getElementById('valor_total').innerText = total.toFixed(2);
     }
-
 
     const PLACE_ID = new URLSearchParams(window.location.search).get("id");
     let blockedRanges = [];
@@ -276,20 +273,31 @@
         const start = getDay(document.getElementById("start_date").value);
         const end   = getDay(document.getElementById("end_date").value);
         
-        if ((!start || !end) || start > end){
+        //ignora periodos invalidos
+        if ((!startStr || !endStr) || start > end){
             alert("O Período Selecionado É Inválido")
             return;
         }
-
-        // valida se está tentando reservar período bloqueado
         for (const r of blockedRanges)
-            if (start <= r.to && end >= r.from) return;
+            if (start <= r.to && end >= r.from){
+                alert('O Período Selecionado É Inválido')
+                return;
+            }
 
         const valor_pago  = parseFloat(document.getElementById('valor_pago').value)
         const valor_total = parseFloat(document.getElementById('valor_total').innerText);
 
-        if (valor_pago > valor_total){
-            alert("Valor Pago Maior Que O Valor Total")
+        if (valor_pago > valor_total || valor_pago < 0 || !valor_pago){
+            alert("O Valor Pago Inserido É Inválido")
+            return;
+        }
+        
+        const client_name  = document.getElementById('cliente_nome').value
+        const client_phone = document.getElementById('cliente_telefone').value
+        const client_email = document.getElementById('cliente_email').value
+
+        if (!client_email || !client_name || !client_phone){
+            alert("Insira Todas As Informações Sobre O Cliente")
             return;
         }
 
@@ -297,19 +305,29 @@
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
-                client_name:  document.getElementById('cliente_nome').value,
-                client_phone: document.getElementById('cliente_telefone').value,
-                client_email: document.getElementById('cliente_email').value,
+                client_name:  client_name,
+                client_phone: client_phone,
+                client_email: client_email,
                 amount_paid:  valor_pago,
                 total_amount: valor_total,
                 place_id: PLACE_ID,
                 start_date: startStr,
                 end_date: endStr,
             })
-        }).then(r => {
-            if (!r.ok) return;
+        }).then(r => r.ok && r.json()).then(r => {
+            if (!r.ok){
+                alert('O Período Selecionado Já Foi Reservado Por Outra Pessoa, Atualizando Calendário')
+                return loadReservas().then(applyCalendar);
+            }
+
+            //limpa os campos
             document.getElementById("start_date").value = "";
             document.getElementById("end_date").value = "";
+            document.getElementById('valor_pago').value = '';
+            document.getElementById('cliente_nome').value = '';
+            document.getElementById('cliente_telefone').value = '';
+            document.getElementById('cliente_email').value = '';
+
             alert("Reserva Realizada Com Sucesso")
             return loadReservas().then(applyCalendar);
         });
