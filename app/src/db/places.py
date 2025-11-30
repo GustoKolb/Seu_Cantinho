@@ -99,7 +99,6 @@ def delete_place(**kwargs):
 
 
 #carrega locais de exemplo
-# Dados dos locais (Places) inseridos diretamente no código
 
 places.append(
     Place(
@@ -130,22 +129,6 @@ places.append(
         capacity=30,
         price=1200.00,
         images=['1.jpg'],
-    )
-)
-
-places.append(
-    Place(
-        name="Auditório Principal",
-        country="Brasil",
-        state="DF",
-        city="Brasília",
-        district="Asa Sul",
-        street="Eixo Monumental",
-        number="100",
-        description="Auditório com poltronas confortáveis e excelente acústica.",
-        capacity=500,
-        price=9000.00,
-        images=['2.jpg'],
     )
 )
 

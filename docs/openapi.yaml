@@ -1,23 +1,24 @@
 openapi: 3.0.3
 
 info:
-  title: Sistema de Reservas - Backend API (Server)
+  title: Sistema de Reservas - Backend API
   version: 1.0.0
   description: |
-    API de backend que gerencia Locais, Reservas e Usuários.
-    Todas as respostas são encapsuladas em um objeto padrão (ServerResponse)
-    para indicar sucesso (ok: true) ou falha.
+    API do backend que gerencia Locais, Reservas e Usuários.
+    Todas as respostas são encapsuladas em um objeto JSON padrão (Apresentado aqui como ServerResponse) para indicar sucesso ou falha, dados retornados e uma mensagem explicando o resultado interno.
 
-    Códigos de Saída do Servidor (`exit_code` mapeado para HTTP):
-      - 200/201 (0): Sucesso
+    A API utilizada encapsula os códigos de resposta HTTP, portanto, é utilizado também um valor de simplificação interno, seguindo o mapeamento HTTP (exit_code) a seguir:
+      - 200/201 (0): Sucesso no processamento
       - 400 (1): Erro de validação, parâmetro inválido, ID não encontrado (CRUD),
                  ou conflito de regra de negócio (Datas/Login)
       - 404 (-1): Endpoint inválido
-      - 500 (2): Erro interno (falha ao ler/gravar DB)
+      - 500 (2): Erro interno (e.g. falha ao ler/gravar DB)
+
+    Essa documentação é referente aos endpoints do broker e sua funcionalidade, porém, como o broker simplesmente redireciona as requisições recebidas para o servidor, a documentação é análoga (no protótipo foram utilizados os nomes traduzidos para demonstrar o funcionamento do redirecionamento: /usuarios -> /users).
 
 servers:
   - url: /
-    description: URL base do Servidor de Backend
+    description: URL base do Broker
 
 tags:
   - name: Usuários
@@ -26,15 +27,8 @@ tags:
     description: Gerenciamento de locais disponíveis para locação.
   - name: Reservas
     description: Gerenciamento de reservas e verificação de conflito de datas.
-  - name: Imagens
-    description: Retorno de arquivos de imagem em Base64.
 
 paths:
-
-  # ===============================================
-  # ================ 1. USUÁRIOS ==================
-  # ===============================================
-
   /login:
     post:
       tags: [Usuários]
@@ -48,22 +42,16 @@ paths:
               $ref: '#/components/schemas/LoginCredentials'
       responses:
         '200':
-          description: Login bem-sucedido
+          description: Informações Processadas Com Sucesso
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerResponseBoolean'
-        '400':
-          description: Credenciais inválidas (exit_code 1)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServerResponse'
 
   /usuarios:
     get:
       tags: [Usuários]
-      summary: Lista ou Busca Usuários
+      summary: Busca Usuários com possibilidade de filtros
       parameters:
         - name: byId
           in: query
@@ -76,7 +64,7 @@ paths:
           schema: { type: string }
       responses:
         '200':
-          description: Lista de usuários (pode ser vazia)
+          description: Lista de usuários
           content:
             application/json:
               schema:
@@ -116,7 +104,8 @@ paths:
               $ref: '#/components/schemas/UserInput'
       responses:
         '200': { description: Usuário atualizado }
-        '400': { description: Usuário não encontrado (exit_code 1) }
+        '400': { description: Usuário não encontrado }
+
 
     delete:
       tags: [Usuários]
@@ -127,18 +116,13 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200': { description: Usuário deletado }
-        '400': { description: Usuário não encontrado (exit_code 1) }
-
-
-  # ===============================================
-  # ================== 2. LOCAIS ==================
-  # ===============================================
+        '200': { description: Usuário Deletado }
+        '400': { description: Usuário não encontrado }
 
   /locais:
     get:
       tags: [Locais]
-      summary: Lista e Filtra Locais
+      summary: Busca Locais com possibilidade de filtros
       parameters:
         - { name: byId,         in: query, schema: { type: integer } }
         - { name: byName,       in: query, schema: { type: string } }
@@ -157,6 +141,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerResponseArrayPlace'
+        '500':
+          description: Erro ao Ler banco de dados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
 
     post:
       tags: [Locais]
@@ -171,6 +161,12 @@ paths:
       responses:
         '201':
           description: Local criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '500':
+          description: Erro ao atualizar banco de dados
           content:
             application/json:
               schema:
@@ -193,7 +189,7 @@ paths:
               $ref: '#/components/schemas/PlaceInput'
       responses:
         '200': { description: Local atualizado }
-        '400': { description: Local não encontrado (exit_code 1) }
+        '400': { description: Local não encontrado }
 
     delete:
       tags: [Locais]
@@ -205,12 +201,7 @@ paths:
           schema: { type: integer }
       responses:
         '200': { description: Local deletado }
-        '400': { description: Local não encontrado (exit_code 1) }
-
-
-  # ===============================================
-  # ================ 3. RESERVAS ==================
-  # ===============================================
+        '400': { description: Local não encontrado }
 
   /reservas:
     get:
@@ -231,7 +222,7 @@ paths:
     post:
       tags: [Reservas]
       summary: Cria uma Nova Reserva
-      description: Valida conflito de data/local.
+      description: Cria Uma nova reserva com verificação de conflito de data/local.
       requestBody:
         required: true
         content:
@@ -246,7 +237,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerResponse'
         '400':
-          description: Conflito de data ou parâmetro inválido (exit_code 1)
+          description: Conflito de data ou parâmetro inválido
           content:
             application/json:
               schema:
@@ -270,7 +261,7 @@ paths:
               $ref: '#/components/schemas/BookingInput'
       responses:
         '200': { description: Reserva atualizada }
-        '400': { description: Reserva não encontrada ou conflito de data (exit_code 1) }
+        '400': { description: Reserva não encontrada ou conflito }
 
     delete:
       tags: [Reservas]
@@ -282,17 +273,13 @@ paths:
           schema: { type: integer }
       responses:
         '200': { description: Reserva deletada }
-        '400': { description: Reserva não encontrada (exit_code 1) }
-
-
-  # ===============================================
-  # ================ 4. IMAGENS ===================
-  # ===============================================
+        '400': { description: Reserva não encontrada }
 
   /images/{filename}:
     get:
-      tags: [Imagens]
+      tags: [Locais]
       summary: Retorna Imagem em Base64
+      description: Retorna a imagem de um Local em Base64 para renderização. Para o protótipo implementado pode parecer estranho, mas pensando numa melhoria onde existem diversas imagens por lugar, esse endpoint separado permite carregar de forma otimizada imagens especificas - visto que cada local tem uma lista de {filename}s - como por exemplo renderizar somente a primeira imagem da lista para utilizar de capa no catálogo.
       parameters:
         - name: filename
           in: path
@@ -306,33 +293,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerResponseBase64'
         '400':
-          description: Arquivo não encontrado (exit_code -1)
+          description: Arquivo não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerResponse'
 
-
-# ===============================================
-# ================ COMPONENTES ==================
-# ===============================================
-
 components:
   schemas:
-
-    # ---------------- Respostas Genéricas ----------------
-
     ServerResponse:
       type: object
       properties:
-        ok:  { type: boolean }
-        msg: { type: string }
-        data: { nullable: true }
+        ok:   { type: boolean }
+        msg:  { type: string }
+        data: { type: object, nullable: true }
 
     ServerResponseArrayUser:
       allOf:
         - $ref: '#/components/schemas/ServerResponse'
-        - properties:
+        - type: object
+          properties:
             data:
               type: array
               items:
@@ -341,7 +321,8 @@ components:
     ServerResponseArrayPlace:
       allOf:
         - $ref: '#/components/schemas/ServerResponse'
-        - properties:
+        - type: object
+          properties:
             data:
               type: array
               items:
@@ -350,7 +331,8 @@ components:
     ServerResponseArrayBooking:
       allOf:
         - $ref: '#/components/schemas/ServerResponse'
-        - properties:
+        - type: object
+          properties:
             data:
               type: array
               items:
@@ -359,17 +341,16 @@ components:
     ServerResponseBase64:
       allOf:
         - $ref: '#/components/schemas/ServerResponse'
-        - properties:
+        - type: object
+          properties:
             data: { type: string }
 
     ServerResponseBoolean:
       allOf:
         - $ref: '#/components/schemas/ServerResponse'
-        - properties:
+        - type: object
+          properties:
             data: { type: boolean }
-
-
-    # ---------------- ENTIDADES ----------------
 
     LoginCredentials:
       type: object
@@ -378,76 +359,82 @@ components:
         user:     { type: string }
         password: { type: string }
 
-    User:
+    UserInput:
       type: object
-      required: [id, name, filial_id, isAdmin]
+      required: [name, filial_id, isAdmin, password]
       properties:
-        id:        { type: integer }
         name:      { type: string }
         filial_id: { type: integer }
         isAdmin:   { type: boolean }
+        password:  { type: string }
 
-    UserInput:
+    User:
       allOf:
-        - $ref: '#/components/schemas/User'
-        - properties:
-            password: { type: string }
-        - required: [name, password, filial_id, isAdmin]
+        - $ref: '#/components/schemas/UserInput'
+        - type: object
+          required: [id]
+          properties:
+            id: { type: integer }
 
-    Place:
+    PlaceBase:
       type: object
-      required:
-        [id, name, country, state, city, district, street, number,
-         description, capacity, price, images]
+      required: [name, country, state, city, district, street, number, description, capacity, price]
       properties:
-        id:         { type: integer }
-        name:       { type: string }
-        country:    { type: string }
-        state:      { type: string }
-        city:       { type: string }
-        district:   { type: string }
-        street:     { type: string }
-        number:     { type: string }
-        description:{ type: string }
-        capacity:   { type: integer }
-        price:      { type: number, format: float }
-        images:
-          type: array
-          items: { type: string }
+        name:        { type: string }
+        country:     { type: string }
+        state:       { type: string }
+        city:        { type: string }
+        district:    { type: string }
+        street:      { type: string }
+        number:      { type: string }
+        description: { type: string }
+        capacity:    { type: integer }
+        price:       { type: number, format: float }
 
     PlaceInput:
       allOf:
-        - $ref: '#/components/schemas/Place'
-        - properties:
+        - $ref: '#/components/schemas/PlaceBase'
+        - type: object
+          properties:
             image_b64: { type: string }
-        - required:
-            [name, country, state, city, district, street,
-             number, description, capacity, price]
 
-    Booking:
+    Place:
+      allOf:
+        - $ref: '#/components/schemas/PlaceBase'
+        - type: object
+          required: [id, images]
+          properties:
+            id: { type: integer }
+            images:
+              type: array
+              items: { type: string }
+
+    BookingBase:
       type: object
-      required:
-        [id, client_name, client_email, client_phone,
-         amount_paid, total_amount, place,
-         start_date, end_date]
+      required: [client_name, client_email, client_phone, amount_paid, total_amount, start_date, end_date]
       properties:
-        id:            { type: integer }
-        client_name:   { type: string }
-        client_email:  { type: string }
-        client_phone:  { type: string }
-        amount_paid:   { type: number, format: float }
-        total_amount:  { type: number, format: float }
-        place:         { $ref: '#/components/schemas/Place' }
-        start_date:    { type: string, format: date }
-        end_date:      { type: string, format: date }
+        client_name:  { type: string }
+        client_email: { type: string }
+        client_phone: { type: string }
+        amount_paid:  { type: number, format: float }
+        total_amount: { type: number, format: float }
+        start_date:   { type: string, format: date }
+        end_date:     { type: string, format: date }
 
     BookingInput:
       allOf:
-        - $ref: '#/components/schemas/Booking'
-        - properties:
+        - $ref: '#/components/schemas/BookingBase'
+        - type: object
+          required: [place_id]
+          properties:
             place_id: { type: integer }
-        - required:
-            [client_name, client_email, client_phone,
-             amount_paid, total_amount, place_id,
-             start_date, end_date]
 
+    Booking:
+      allOf:
+        - $ref: '#/components/schemas/BookingBase'
+        - type: object
+          required: [id, place]
+          properties:
+            id: { type: integer }
+            place:
+              $ref: '#/components/schemas/Place'
